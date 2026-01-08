@@ -53,7 +53,7 @@ The extension uses a modular AI service architecture that makes it easy to integ
 4. **Use the Floating Button**: Look for the floating button on the page
 5. **Open the Panel**: Click the button to open the side panel
 6. **Clean Interface**: The panel shows only the translation button (original text is hidden for focused reading)
-7. **Translate Content**: Click the "Translate to Chinese" button to get AI-powered translation
+7. **Translate Content**: Click the "Analyze" button to get AI-powered analyze 
 
    ![Example Usage](example.jpg)
    *Floating panel showing AI-translated content and comment analysis (Japanese Target)*
