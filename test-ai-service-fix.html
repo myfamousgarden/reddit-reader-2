@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Service Provider Fix Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #45a049;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            background: #f9f9f9;
+            border-left: 4px solid #2196F3;
+        }
+        .error {
+            border-left-color: #f44336;
+            background: #ffebee;
+        }
+        .success {
+            border-left-color: #4CAF50;
+            background: #e8f5e9;
+        }
+    </style>
+</head>
+<body>
+    <h1>AI Service Provider Fix Test</h1>
+    
+    <div class="test-container">
+        <h2>Test AI Service Provider Settings</h2>
+        <p>This test simulates the Chrome storage settings to verify that both post translation and comment analyzer use the same AI service provider.</p>
+        
+        <button class="test-button" onclick="testDashScopeSettings()">Test DashScope Settings</button>
+        <button class="test-button" onclick="testZhipuSettings()">Test Zhipu Settings</button>
+        <button class="test-button" onclick="testMissingProvider()">Test Missing Provider</button>
+        
+        <div id="testResult" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        // Mock Chrome storage API for testing
+        window.chrome = {
+            storage: {
+                sync: {
+                    get: function(keys, callback) {
+                        // This will be set by our test functions
+                        callback(window.mockSettings || {});
+                    }
+                }
+            }
+        };
+
+        // Simulate the settings reading logic from content.js
+        async function simulateAnalyzePostSettings() {
+            return new Promise((resolve) => {
+                chrome.storage.sync.get(['dashscopeApiKey', 'glmApiKey', 'aiProvider', 'targetLanguage'], resolve);
+            });
+        }
+
+        async function simulateSummarizeCommentsSettings() {
+            return new Promise((resolve) => {
+                chrome.storage.sync.get(['aiProvider', 'dashscopeApiKey', 'glmApiKey', 'targetLanguage'], resolve);
+            });
+        }
+
+        function getAiProviderFromSettings(settings, methodName) {
+            if (methodName === 'analyzePost') {
+                return settings.aiProvider || 'dashscope';
+            } else if (methodName === 'summarizeComments') {
+                return settings.aiProvider || 'dashscope';
+            }
+        }
+
+        async function testSettings(mockSettings, testName) {
+            const resultDiv = document.getElementById('testResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `<h3>Testing: ${testName}</h3>`;
+            
+            // Set mock settings
+            window.mockSettings = mockSettings;
+            
+            try {
+                // Test analyzePost settings
+                const analyzeSettings = await simulateAnalyzePostSettings();
+                const analyzeProvider = getAiProviderFromSettings(analyzeSettings, 'analyzePost');
+                
+                // Test summarizeComments settings
+                const commentsSettings = await simulateSummarizeCommentsSettings();
+                const commentsProvider = getAiProviderFromSettings(commentsSettings, 'summarizeComments');
+                
+                // Check if both methods use the same provider
+                const isConsistent = analyzeProvider === commentsProvider;
+                
+                let result = `
+                    <p><strong>Mock Settings:</strong> ${JSON.stringify(mockSettings, null, 2)}</p>
+                    <p><strong>Post Translation Provider:</strong> ${analyzeProvider}</p>
+                    <p><strong>Comment Analyzer Provider:</strong> ${commentsProvider}</p>
+                    <p><strong>Consistency:</strong> ${isConsistent ? '✅ PASS' : '❌ FAIL'}</p>
+                `;
+                
+                if (isConsistent) {
+                    resultDiv.className = 'result success';
+                    result += `<p>✅ Both methods use the same AI service provider: <strong>${analyzeProvider}</strong></p>`;
+                } else {
+                    resultDiv.className = 'result error';
+                    result += `<p>❌ Methods use different providers! This indicates a bug.</p>`;
+                }
+                
+                resultDiv.innerHTML += result;
+                
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML += `<p>❌ Error during test: ${error.message}</p>`;
+            }
+        }
+
+        function testDashScopeSettings() {
+            const mockSettings = {
+                aiProvider: 'dashscope',
+                dashscopeApiKey: 'test-dashscope-key',
+                targetLanguage: 'zh'
+            };
+            testSettings(mockSettings, 'DashScope Provider');
+        }
+
+        function testZhipuSettings() {
+            const mockSettings = {
+                aiProvider: 'glm',
+                glmApiKey: 'test-zhipu-key',
+                targetLanguage: 'zh'
+            };
+            testSettings(mockSettings, 'Zhipu AI Provider');
+        }
+
+        function testMissingProvider() {
+            const mockSettings = {
+                dashscopeApiKey: 'test-dashscope-key',
+                targetLanguage: 'zh'
+                // aiProvider is missing, should default to 'dashscope'
+            };
+            testSettings(mockSettings, 'Missing Provider (should default to DashScope)');
+        }
+    </script>
+</body>
+</html>

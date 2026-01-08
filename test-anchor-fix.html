@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anchor Fix Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .comment-anchor {
+            color: #0066cc;
+            text-decoration: none;
+            margin-left: 5px;
+        }
+        .comment-anchor:hover {
+            text-decoration: underline;
+        }
+        #result {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Anchor HTML Escape Fix Test</h1>
+    
+    <div class="test-section">
+        <h2>Test Input</h2>
+        <p>Original text with anchor:</p>
+        <code>TimeMoney506 &lt;a href="#" class="comment-anchor" data-comment-id="t1nf1pug8" title="Jump to Time_Money506's comment"&gt;🔗&lt;/a&gt;</code>
+    </div>
+    
+    <div class="test-section">
+        <h2>Expected Output</h2>
+        <p>Should render as clickable link:</p>
+        <div>TimeMoney506 <a href="#" class="comment-anchor" data-comment-id="t1nf1pug8" title="Jump to Time_Money506's comment">🔗</a></div>
+    </div>
+    
+    <button onclick="testAnchorProcessing()">🧪 Test Anchor Processing</button>
+    
+    <div id="result"></div>
+
+    <script>
+        // Simplified version of the methods for testing
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function markdownToHtml(text) {
+            if (!text) return '';
+            
+            // First, preserve anchor links by replacing them with placeholders
+            const anchorPlaceholders = [];
+            let html = text.replace(/<a[^>]*class="comment-anchor"[^>]*>.*?<\/a>/g, (match) => {
+                const placeholder = `§§ANCHOR${anchorPlaceholders.length}§§`;
+                anchorPlaceholders.push(match);
+                return placeholder;
+            });
+            
+            // Escape HTML to prevent XSS (but anchors are already preserved)
+            html = escapeHtml(html);
+            
+            // Convert markdown syntax to HTML
+            // Bold text
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            
+            // Line breaks
+            html = html.replace(/\n/g, '<br>');
+            
+            // Restore anchor links
+            anchorPlaceholders.forEach((anchor, index) => {
+                const placeholder = `§§ANCHOR${index}§§`;
+                html = html.replace(placeholder, anchor);
+            });
+            
+            return html;
+        }
+
+        function testAnchorProcessing() {
+            const testInput = 'TimeMoney506 <a href="#" class="comment-anchor" data-comment-id="t1nf1pug8" title="Jump to Time_Money506\'s comment">🔗</a>';
+            
+            console.log('Input:', testInput);
+            
+            const result = markdownToHtml(testInput);
+            console.log('Output:', result);
+            
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `
+                <h3>Test Result:</h3>
+                <p><strong>Input:</strong></p>
+                <code>${escapeHtml(testInput)}</code>
+                <p><strong>Processed Output:</strong></p>
+                <code>${escapeHtml(result)}</code>
+                <p><strong>Rendered Output:</strong></p>
+                <div style="border: 1px solid #ccc; padding: 10px; background: white;">${result}</div>
+                <p><strong>Is anchor clickable?</strong> ${result.includes('<a ') ? '✅ Yes' : '❌ No'}</p>
+            `;
+            
+            // Add click handler to test anchor
+            const anchor = resultDiv.querySelector('.comment-anchor');
+            if (anchor) {
+                anchor.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    alert('Anchor clicked! Comment ID: ' + anchor.getAttribute('data-comment-id'));
+                });
+            }
+        }
+    </script>
+</body>
+</html>

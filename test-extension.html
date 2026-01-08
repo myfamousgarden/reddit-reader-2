@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reddit Reader 2 - Extension Test Page</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .status-box {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #4facfe;
+        }
+        
+        .test-section {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .highlight {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        
+        .new-feature {
+            background: rgba(76, 175, 80, 0.3);
+            border-left: 4px solid #4CAF50;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        
+        ul {
+            padding-left: 20px;
+        }
+        
+        li {
+            margin: 8px 0;
+        }
+        
+        .content-area {
+            height: 200vh;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Reddit Reader 2 Test Page</h1>
+        
+        <div class="status-box">
+            <h3>✅ Extension Status: Ready for Testing</h3>
+            <p>The floating panel height has been updated to match the Chrome window height!</p>
+        </div>
+        
+        <div class="new-feature">
+             <h3>🆕 Latest Updates</h3>
+             <ul>
+                 <li><strong>Full-Height Panel:</strong> Panel spans the entire height of the Chrome window (100vh)</li>
+                 <li><strong>Right-Aligned:</strong> Panel now aligns perfectly with the browser's right edge (no gap)</li>
+                 <li><strong>Sharp Corners:</strong> Removed rounded corners for a more modern, edge-to-edge look</li>
+             </ul>
+         </div>
+        
+        <div class="test-section">
+            <h3>🧪 Test Instructions</h3>
+            <ol>
+                <li>Load this extension in Chrome (Developer mode)</li>
+                <li>Navigate to this test page</li>
+                <li>Look for the <span class="highlight">floating button</span> on the right side of the page</li>
+                <li>Click the button to open the side panel</li>
+                <li><strong>New:</strong> Notice the panel now extends from top to bottom of the window</li>
+                <li>Verify the panel's right edge aligns with the browser window edge</li>
+                <li>Confirm the panel has no rounded corners</li>
+                <li>Verify the panel shows welcome message for non-Reddit pages</li>
+                <li><strong>Reddit Testing:</strong> Navigate to a Reddit post (e.g., reddit.com/r/programming/comments/...)</li>
+                <li>Open the panel and verify it displays the post title and content</li>
+                <li>Navigate to different Reddit posts and verify content updates automatically</li>
+                <li>Navigate back to non-Reddit pages and verify welcome message returns</li>
+                <li>Try dragging the floating button to different positions</li>
+                <li>Resize your browser window and observe how the panel adjusts</li>
+                <li>Test scrolling within the panel content area</li>
+                <li>Click outside the panel or the close button to hide it</li>
+            </ol>
+        </div>
+        
+        <div class="test-section">
+             <h3>📏 Panel Testing</h3>
+             <ul>
+                 <li><strong>Panel Height:</strong> Should match your browser window height exactly</li>
+                 <li><strong>Right Alignment:</strong> Panel right edge should align perfectly with browser window right edge</li>
+                 <li><strong>No Rounded Corners:</strong> Panel should have sharp, square corners</li>
+                 <li><strong>Content Scrolling:</strong> Panel content should scroll independently</li>
+                 <li><strong>Responsive:</strong> Panel adjusts when you resize the window</li>
+                 <li><strong>Position:</strong> Panel starts from the very top (0px) of the window</li>
+                 <li><strong>Reddit Content Display:</strong> Panel should show Reddit post content when on Reddit pages</li>
+                 <li><strong>Non-Reddit Pages:</strong> Panel should show welcome message on non-Reddit pages</li>
+                 <li><strong>Auto-Refresh:</strong> Content should update when navigating between pages</li>
+             </ul>
+         </div>
+        
+        <div class="test-section">
+             <h3>🎯 Expected Behavior</h3>
+             <ul>
+                 <li>Panel slides in from the right side</li>
+                 <li>Panel height = 100% of browser window height</li>
+                 <li>Panel top edge aligns with browser window top</li>
+                 <li>Panel bottom edge aligns with browser window bottom</li>
+                 <li><strong>Panel right edge aligns perfectly with browser window right edge (no gap)</strong></li>
+                 <li><strong>Panel has sharp corners (no border-radius)</strong></li>
+                 <li>Content area inside panel scrolls when needed</li>
+                 <li>Smooth animations and transitions</li>
+             </ul>
+         </div>
+        
+        <div class="content-area">
+            <h3>📄 Extended Content for Testing</h3>
+            <p>This section has extra height to test the panel behavior with long pages. Scroll down to see more content and test how the panel behaves with different page heights.</p>
+            
+            <h4>Sample Reddit-style Content</h4>
+            <div style="margin: 20px 0; padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 8px;">
+                <h5>📝 Post Title: Amazing Discovery in Science</h5>
+                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+                <p><strong>Comments:</strong> 42 | <strong>Upvotes:</strong> 1.2k</p>
+            </div>
+            
+            <div style="margin: 20px 0; padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 8px;">
+                <h5>🔥 Hot Topic: Technology Trends 2024</h5>
+                <p>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+                <p><strong>Comments:</strong> 156 | <strong>Upvotes:</strong> 3.4k</p>
+            </div>
+            
+            <div style="margin: 20px 0; padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 8px;">
+                <h5>💡 Discussion: Best Practices</h5>
+                <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
+                <p><strong>Comments:</strong> 89 | <strong>Upvotes:</strong> 2.1k</p>
+            </div>
+            
+            <div style="margin: 20px 0; padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 8px;">
+              <h4 style="margin: 0 0 10px 0;">🔄 Auto Refresh Test</h4>
+              <p style="margin: 0; font-size: 14px;">Navigate between different Reddit pages to test automatic content refresh when URL changes.</p>
+            </div>
+
+            <div style="margin: 20px 0; padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 8px;">
+          <h4 style="margin: 0 0 10px 0;">🌐 Translation Feature Test</h4>
+          <p style="margin: 0 0 8px 0; font-size: 14px;">Test the clean translation interface (original text hidden):</p>
+          <ul style="margin: 0; padding-left: 20px; font-size: 14px;">
+            <li>Configure DashScope API key in extension popup</li>
+            <li>Open a Reddit post page</li>
+            <li>Panel shows only translation button (no original text)</li>
+            <li>Click "Analyze" for streaming translation</li>
+            <li>Only translated content is displayed</li>
+          </ul>
+        </div>
+
+            <p style="margin-top: 50px; text-align: center; font-style: italic;">
+                Scroll back up to test the floating panel with this extended content!
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Add some interactive testing features
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if extension is loaded
+            setTimeout(() => {
+                const button = document.querySelector('.reddit-reader-2-floating-button');
+                const statusBox = document.querySelector('.status-box h3');
+                
+                if (button) {
+                    statusBox.textContent = '✅ Extension Status: Active and Ready!';
+                    statusBox.style.color = '#4CAF50';
+                } else {
+                    statusBox.textContent = '⚠️ Extension Status: Please refresh the page';
+                    statusBox.style.color = '#FF9800';
+                }
+            }, 1000);
+            
+            // Add window resize listener for testing
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    console.log('Window resized - Panel should adjust height automatically');
+                }, 250);
+            });
+        });
+    </script>
+</body>
+</html>

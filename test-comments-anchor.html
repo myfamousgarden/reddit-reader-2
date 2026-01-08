@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reddit Reader 2 - Comments Anchor Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        .test-section {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #ff4500;
+        }
+        
+        .reddit-post {
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            margin: 20px 0;
+            padding: 20px;
+        }
+        
+        .post-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1a1a1b;
+            margin-bottom: 10px;
+        }
+        
+        .post-content {
+            color: #1c1c1c;
+            margin-bottom: 20px;
+        }
+        
+        /* Simulate Reddit comment structure */
+        shreddit-comment {
+            display: block;
+            border: 1px solid #edeff1;
+            border-radius: 4px;
+            margin: 10px 0;
+            padding: 15px;
+            background: #fafafa;
+        }
+        
+        .comment-author {
+            font-weight: bold;
+            color: #1a73e8;
+            margin-bottom: 8px;
+        }
+        
+        .comment-content {
+            color: #1c1c1c;
+            line-height: 1.5;
+        }
+        
+        .comment-meta {
+            font-size: 12px;
+            color: #7c7c7c;
+            margin-top: 8px;
+        }
+        
+        .instructions {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #2196f3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔗 Comments Anchor Test Page</h1>
+        
+        <div class="instructions">
+            <h3>📋 Test Instructions</h3>
+            <ol>
+                <li>Load the Reddit Reader 2 extension</li>
+                <li>Open the side panel on this page</li>
+                <li>Click "Summarize Comments" to generate a summary</li>
+                <li>Look for anchor links (🔗) next to usernames in the summary</li>
+                <li>Click the anchor links to jump to specific comments below</li>
+                <li>Verify that clicking anchors scrolls to and highlights the correct comment</li>
+            </ol>
+            
+            <button id="testAnchorGeneration" style="background: #ff4500; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 10px 0;">
+                🧪 Test Anchor Generation
+            </button>
+            <div id="testResult" style="margin-top: 10px; padding: 10px; background: #f0f0f0; border-radius: 5px; display: none;"></div>
+        </div>
+        
+        <div class="reddit-post">
+            <div class="post-title">Amazing Discovery in Machine Learning</div>
+            <div class="post-content">
+                Scientists have made a breakthrough in neural network architecture that could revolutionize AI development. 
+                The new approach shows 40% improvement in efficiency while maintaining accuracy.
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>📝 Simulated Comments Summary (with Anchor Links)</h3>
+            <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
+                <p><strong>TechExpert42</strong> <a href="#" class="comment-anchor" data-comment-id="comment1" style="color: #1a73e8; text-decoration: none; margin-left: 5px;">🔗</a> is very excited about this breakthrough, calling it groundbreaking after 10 years in ML.</p>
+                
+                <p><strong>DataScientist99</strong> <a href="#" class="comment-anchor" data-comment-id="comment2" style="color: #1a73e8; text-decoration: none; margin-left: 5px;">🔗</a> expresses skepticism and calls for peer review before getting excited.</p>
+                
+                <p><strong>AIResearcher</strong> <a href="#" class="comment-anchor" data-comment-id="comment3" style="color: #1a73e8; text-decoration: none; margin-left: 5px;">🔗</a> agrees with DataScientist99 about peer review but finds the preliminary results promising.</p>
+                
+                <p><strong>CodeMaster2024</strong> <a href="#" class="comment-anchor" data-comment-id="comment4" style="color: #1a73e8; text-decoration: none; margin-left: 5px;">🔗</a> is looking for implementation examples and architecture diagrams.</p>
+                
+                <p><strong>MLStudent</strong> <a href="#" class="comment-anchor" data-comment-id="comment5" style="color: #1a73e8; text-decoration: none; margin-left: 5px;">🔗</a> wants to use this for their thesis and asks TechExpert42 for recommendations.</p>
+                
+                <p><strong>IndustryVet</strong> <a href="#" class="comment-anchor" data-comment-id="comment6" style="color: #1a73e8; text-decoration: none; margin-left: 5px;">🔗</a> sees business potential in reducing training costs and agrees with CodeMaster2024.</p>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>💬 Simulated Reddit Comments</h3>
+            <p>These comments simulate the structure that Reddit Reader 2 expects:</p>
+        </div>
+        
+        <!-- Simulated Reddit Comments -->
+        <shreddit-comment data-testid="comment-tree-1" data-comment-id="comment1">
+            <div class="comment-author">TechExpert42</div>
+            <div class="comment-content">
+                This is absolutely groundbreaking! I've been working in ML for 10 years and this approach 
+                could solve many of the efficiency problems we've been facing. The 40% improvement is incredible.
+            </div>
+            <div class="comment-meta">Score: 156 • 2 hours ago</div>
+        </shreddit-comment>
+        
+        <shreddit-comment data-testid="comment-tree-2" data-comment-id="comment2">
+            <div class="comment-author">DataScientist99</div>
+            <div class="comment-content">
+                I'm skeptical about these claims. We need to see the peer review process and replication studies 
+                before getting too excited. Remember the last "breakthrough" that turned out to be overhyped?
+            </div>
+            <div class="comment-meta">Score: 89 • 1 hour ago</div>
+        </shreddit-comment>
+        
+        <shreddit-comment data-testid="comment-tree-3" data-comment-id="comment3">
+            <div class="comment-author">AIResearcher</div>
+            <div class="comment-content">
+                @DataScientist99 makes a good point about peer review, but the preliminary results look promising. 
+                The methodology seems sound based on what they've shared so far.
+            </div>
+            <div class="comment-meta">Score: 67 • 45 minutes ago</div>
+        </shreddit-comment>
+        
+        <shreddit-comment data-testid="comment-tree-4" data-comment-id="comment4">
+            <div class="comment-author">CodeMaster2024</div>
+            <div class="comment-content">
+                Has anyone tried implementing this yet? I'd love to see some code examples or at least 
+                a high-level architecture diagram. The paper is quite theoretical.
+            </div>
+            <div class="comment-meta">Score: 34 • 30 minutes ago</div>
+        </shreddit-comment>
+        
+        <shreddit-comment data-testid="comment-tree-5" data-comment-id="comment5">
+            <div class="comment-author">MLStudent</div>
+            <div class="comment-content">
+                This is exactly what I needed for my thesis! @TechExpert42, do you have any recommendations 
+                for getting started with this approach? I'm still learning the fundamentals.
+            </div>
+            <div class="comment-meta">Score: 12 • 15 minutes ago</div>
+        </shreddit-comment>
+        
+        <shreddit-comment data-testid="comment-tree-6" data-comment-id="comment6">
+            <div class="comment-author">IndustryVet</div>
+            <div class="comment-content">
+                From a business perspective, this could significantly reduce our training costs. 
+                @CodeMaster2024, I agree we need more practical implementation details.
+            </div>
+            <div class="comment-meta">Score: 78 • 10 minutes ago</div>
+        </shreddit-comment>
+        
+        <div class="test-section">
+            <h3>🎯 Expected Behavior</h3>
+            <ul>
+                <li>Comments Summary should show anchor links (🔗) next to mentioned usernames</li>
+                <li>Clicking anchor links should scroll to the corresponding comment</li>
+                <li>The target comment should be temporarily highlighted</li>
+                <li>The side panel should temporarily hide during scrolling for better visibility</li>
+                <li>Smooth scrolling animation should be visible</li>
+            </ul>
+        </div>
+        
+        <div style="height: 500px; background: linear-gradient(to bottom, #f0f0f0, #e0e0e0); 
+                    display: flex; align-items: center; justify-content: center; 
+                    border-radius: 8px; margin: 20px 0;">
+            <p style="text-align: center; color: #666; font-style: italic;">
+                Extra space for testing scroll behavior<br>
+                <small>Anchor links should scroll past this area to reach comments</small>
+            </p>
+        </div>
+    </div>
+    <script>
+        // Add some interactive testing features
+        document.addEventListener('DOMContentLoaded', function() {
+            // Test anchor link functionality
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('comment-anchor')) {
+                    e.preventDefault();
+                    const commentId = e.target.getAttribute('data-comment-id');
+                    console.log('Anchor clicked for comment:', commentId);
+                    
+                    // Find the target comment
+                    const targetComment = document.querySelector(`shreddit-comment[data-comment-id="${commentId}"]`);
+                    if (targetComment) {
+                        // Scroll to the comment
+                        targetComment.scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'center' 
+                        });
+                        
+                        // Highlight the comment
+                        targetComment.style.backgroundColor = '#fff3cd';
+                        targetComment.style.border = '2px solid #ffc107';
+                        targetComment.style.transition = 'all 0.3s ease';
+                        
+                        // Remove highlight after 3 seconds
+                        setTimeout(() => {
+                            targetComment.style.backgroundColor = '#fafafa';
+                            targetComment.style.border = '1px solid #edeff1';
+                        }, 3000);
+                        
+                        console.log('Scrolled to and highlighted comment:', commentId);
+                    } else {
+                        console.error('Comment not found:', commentId);
+                    }
+                }
+            });
+            
+            // Test anchor generation manually
+            document.getElementById('testAnchorGeneration').addEventListener('click', function() {
+                const testResult = document.getElementById('testResult');
+                testResult.style.display = 'block';
+                
+                // Simulate the anchor generation process
+                const sampleText = `**TechExpert42** is very excited about this breakthrough. **DataScientist99** expresses skepticism. **AIResearcher** agrees with DataScientist99 but finds results promising.`;
+                
+                // Check if extension is available
+                if (window.redditReader2Instance) {
+                    const processedText = window.redditReader2Instance.addAnchorLinksToSummary(sampleText);
+                    testResult.innerHTML = `
+                        <h4>🔍 Anchor Generation Test</h4>
+                        <p><strong>Original:</strong> ${sampleText}</p>
+                        <p><strong>Processed:</strong> ${processedText}</p>
+                        <p><strong>Status:</strong> ${processedText !== sampleText ? '✅ Anchors generated' : '❌ No anchors generated'}</p>
+                    `;
+                } else {
+                    testResult.innerHTML = `
+                        <h4>⚠️ Extension Not Available</h4>
+                        <p>Reddit Reader 2 extension is not loaded or accessible.</p>
+                        <p>Please make sure the extension is installed and this page is refreshed.</p>
+                    `;
+                }
+            });
+            
+            // Check if extension is loaded
+            setTimeout(() => {
+                const button = document.querySelector('.reddit-reader-2-floating-button');
+                console.log('Extension button found:', !!button);
+                console.log('Extension instance available:', !!window.redditReader2Instance);
+                
+                if (button) {
+                    console.log('✅ Extension is loaded and active');
+                } else {
+                    console.log('⚠️ Extension not detected - please refresh the page');
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
