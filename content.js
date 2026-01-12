@@ -314,6 +314,9 @@ class RedditReader2 {
               <div class="reddit-reader-2-comments-result" id="commentsResult" style="display: none;">
                 <h5>Comments Summary:</h5>
                 <div class="comments-content"></div>
+                <div style="margin-top: 10px; text-align: right;">
+                    <a href="#" id="downloadCommentsBtn" style="font-size: 12px; color: #666; text-decoration: underline;">Download comments</a>
+                </div>
               </div>
             </div>
           </div>
@@ -326,6 +329,15 @@ class RedditReader2 {
         analyzeBtn.addEventListener('click', () => {
           this.analyzePost(redditData);
         });
+      }
+
+      // Add event listener for download button
+      const downloadBtn = contentDiv.querySelector('#downloadCommentsBtn');
+      if (downloadBtn) {
+          downloadBtn.addEventListener('click', (e) => {
+              e.preventDefault();
+              this.downloadCommentsAsCSV();
+          });
       }
     } else {
       contentDiv.innerHTML = `
@@ -627,14 +639,30 @@ class RedditReader2 {
       const thingId = commentEl.getAttribute('thingid');
       const score = parseInt(commentEl.getAttribute('score')) || 0;
       const depth = parseInt(commentEl.getAttribute('depth')) || 0;
+      const permalink = commentEl.getAttribute('permalink') || '';
       
-      // Extract comment content
+      // Extract timestamp
+      let time = '';
+      const timeElement = commentEl.querySelector('time');
+      if (timeElement) {
+        time = timeElement.getAttribute('datetime') || timeElement.getAttribute('title') || timeElement.textContent;
+      }
+      
+      // Extract comment content and links
       const contentElement = commentEl.querySelector('[id$="-post-rtjson-content"]');
       let content = '';
+      const links = [];
+      
       if (contentElement) {
         // Get text content, removing any tracking elements
         const textElements = contentElement.querySelectorAll('p');
         content = Array.from(textElements).map(p => p.textContent.trim()).join('\n').trim();
+        
+        // Get links
+        const linkElements = contentElement.querySelectorAll('a');
+        linkElements.forEach(a => {
+            if (a.href) links.push(a.href);
+        });
       }
       
       if (content && author && thingId) {
@@ -644,7 +672,10 @@ class RedditReader2 {
           content: content,
           score: score,
           depth: depth,
-          isOP: author === opUsername
+          isOP: author === opUsername,
+          time: time,
+          permalink: permalink,
+          links: links
         });
       }
     });
@@ -847,6 +878,53 @@ class RedditReader2 {
       console.error('Comment summarization error:', error);
       this.showCommentsError(`Error: ${error.message}`);
     }
+  }
+
+  // Download comments as CSV
+  downloadCommentsAsCSV() {
+    const commentsData = this.extractRedditComments();
+    if (commentsData.totalComments === 0) {
+      alert('No comments found to download.');
+      return;
+    }
+
+    const headers = ['Author', 'Time', 'Score', 'Thread Level', 'Is Reply', 'Comment', 'Permalink', 'Links'];
+    const csvRows = [headers.join(',')];
+
+    commentsData.comments.forEach(comment => {
+      const row = [
+        this.escapeCSV(comment.author),
+        this.escapeCSV(comment.time),
+        comment.score,
+        comment.depth,
+        comment.depth > 0 ? 'Yes' : 'No',
+        this.escapeCSV(comment.content),
+        this.escapeCSV('https://www.reddit.com' + comment.permalink),
+        this.escapeCSV(comment.links.join('; '))
+      ];
+      csvRows.push(row.join(','));
+    });
+
+    const csvString = csvRows.join('\n');
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `reddit_comments_${new Date().toISOString().slice(0,10)}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  // Helper to escape CSV fields
+  escapeCSV(str) {
+    if (str === null || str === undefined) return '';
+    const stringValue = String(str);
+    if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+      return `"${stringValue.replace(/"/g, '""')}"`;
+    }
+    return stringValue;
   }
 
   showCommentsLoading() {
