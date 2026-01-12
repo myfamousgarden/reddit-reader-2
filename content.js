@@ -349,6 +349,50 @@ class RedditReader2 {
     }
   }
 
+  // Load all comments by scrolling to bottom until "top-level-more-comments-partial" is gone
+  async loadAllComments() {
+    console.log('Starting to load all comments...');
+    const analyzeBtn = document.querySelector('#analyzeBtn');
+    
+    let moreCommentsPartial = document.querySelector('faceplate-partial[id="top-level-more-comments-partial"]');
+    let loadMoreTracker = document.querySelector('faceplate-tracker[source="post_detail"][action="click"][noun="load_more_comments"]');
+    
+    let retryCount = 0;
+    const maxRetries = 50; // Safety break
+    
+    while ((moreCommentsPartial || loadMoreTracker) && retryCount < maxRetries) {
+      if (analyzeBtn) {
+        analyzeBtn.innerHTML = `<span class="analyze-icon">⏳</span> Loading comments...`;
+      }
+      
+      if (moreCommentsPartial) {
+        console.log('Found more comments partial, scrolling to bottom...');
+        window.scrollTo(0, document.body.scrollHeight);
+      } else if (loadMoreTracker) {
+        console.log('Found load more tracker, clicking button...');
+        // Try to find a button inside, otherwise click the tracker itself
+        const button = loadMoreTracker.querySelector('button');
+        if (button) {
+          button.click();
+        } else {
+          loadMoreTracker.click();
+        }
+        // Scroll to the tracker to ensure visibility
+        loadMoreTracker.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      
+      // Wait for content to load
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Re-check for elements
+      moreCommentsPartial = document.querySelector('faceplate-partial[id="top-level-more-comments-partial"]');
+      loadMoreTracker = document.querySelector('faceplate-tracker[source="post_detail"][action="click"][noun="load_more_comments"]');
+      retryCount++;
+    }
+    
+    console.log('Finished loading comments or max retries reached.');
+  }
+
   // Analyze Reddit post (translate + summarize comments)
   async analyzePost(redditData) {
     const analyzeBtn = document.querySelector('#analyzeBtn');
@@ -359,6 +403,11 @@ class RedditReader2 {
     try {
       // Update button state
       analyzeBtn.disabled = true;
+      analyzeBtn.innerHTML = '<span class="analyze-icon">⏳</span> Analyzing...';
+      
+      // Load all comments first
+      await this.loadAllComments();
+      // Restore analyzing state text
       analyzeBtn.innerHTML = '<span class="analyze-icon">⏳</span> Analyzing...';
       
       // Show analysis result section
