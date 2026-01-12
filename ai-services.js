@@ -3,6 +3,84 @@
  * Abstract interface and concrete implementations for different AI providers
  */
 
+// Helper function to make streaming requests through background service worker
+async function makeStreamingRequest(provider, apiKey, url, headers, body, onChunk, onComplete, onError) {
+  const streamId = `stream_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  let fullText = '';
+  let isComplete = false;
+  let hasError = false;
+
+  // Set up message listener for stream chunks
+  const messageListener = (message) => {
+    if (message.action === 'streamChunk' && message.streamId === streamId) {
+      if (message.data) {
+        // Parse the SSE line - handle both "data: " and "data:" formats
+        const line = message.data.trim();
+        let data = null;
+        
+        if (line.startsWith('data: ')) {
+          data = line.slice(6).trim();
+        } else if (line.startsWith('data:')) {
+          data = line.slice(5).trim();
+        }
+        
+        if (!data || data === '[DONE]') {
+          return;
+        }
+        
+        try {
+          const parsed = JSON.parse(data);
+          // Extract content based on provider format
+          let content = null;
+          
+          if (parsed.choices && parsed.choices[0] && parsed.choices[0].delta) {
+            content = parsed.choices[0].delta.content;
+          }
+          
+          if (content) {
+            fullText += content;
+            if (onChunk) {
+              onChunk(content, fullText);
+            }
+          }
+        } catch (parseError) {
+          // Ignore parsing errors for incomplete JSON
+        }
+      }
+    } else if (message.action === 'streamComplete' && message.streamId === streamId) {
+      isComplete = true;
+      chrome.runtime.onMessage.removeListener(messageListener);
+      if (onComplete) {
+        onComplete(fullText);
+      }
+    } else if (message.action === 'streamError' && message.streamId === streamId) {
+      hasError = true;
+      chrome.runtime.onMessage.removeListener(messageListener);
+      if (onError) {
+        onError(new Error(message.error));
+      }
+    }
+  };
+
+  chrome.runtime.onMessage.addListener(messageListener);
+
+  // Send request to background service worker
+  chrome.runtime.sendMessage({
+    action: 'aiStreamRequest',
+    provider: provider,
+    apiKey: apiKey,
+    url: url,
+    headers: headers,
+    body: body,
+    streamId: streamId
+  }).catch(error => {
+    chrome.runtime.onMessage.removeListener(messageListener);
+    if (onError) {
+      onError(error);
+    }
+  });
+}
+
 // Abstract base class for AI translation services
 class AITranslationService {
   constructor(apiKey) {
@@ -191,54 +269,13 @@ class DashScopeService extends AITranslationService {
         }
       };
 
-      const response = await fetch(this.apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Accept': 'text/event-stream'
-        },
-        body: JSON.stringify(requestBody)
-      });
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Accept': 'text/event-stream'
+      };
 
-      if (!response.ok) {
-        throw new Error(`DashScope API request failed: ${response.status} ${response.statusText}`);
-      }
-
-      const reader = response.body.getReader();
-      let translatedText = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = new TextDecoder().decode(value);
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6));
-              if (data.choices && data.choices[0] && data.choices[0].delta && data.choices[0].delta.content) {
-                const deltaContent = data.choices[0].delta.content;
-                translatedText += deltaContent;
-                
-                // Call the chunk callback
-                if (onChunk) {
-                  onChunk(deltaContent, translatedText);
-                }
-              }
-            } catch (parseError) {
-              console.error('Error parsing DashScope streaming response:', parseError);
-            }
-          }
-        }
-      }
-
-      // Call completion callback
-      if (onComplete) {
-        onComplete(translatedText);
-      }
+      await makeStreamingRequest('dashscope', this.apiKey, this.apiUrl, headers, requestBody, onChunk, onComplete, onError);
 
     } catch (error) {
       console.error('DashScope translation error:', error);
@@ -275,55 +312,18 @@ class DashScopeService extends AITranslationService {
         }
       };
 
-      const response = await fetch(this.apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Accept': 'text/event-stream'
-        },
-        body: JSON.stringify(requestBody)
-      });
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Accept': 'text/event-stream'
+      };
 
-      if (!response.ok) {
-        throw new Error(`DashScope API request failed: ${response.status} ${response.statusText}`);
-      }
-
-      const reader = response.body.getReader();
-      let summaryText = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = new TextDecoder().decode(value);
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') {
-              continue;
-            }
-
-            try {
-              const parsed = JSON.parse(data);
-              if (parsed.choices && parsed.choices[0] && parsed.choices[0].delta && parsed.choices[0].delta.content) {
-                const content = parsed.choices[0].delta.content;
-                summaryText += content;
-                onChunk(content);
-              }
-            } catch (parseError) {
-              // Ignore parsing errors for incomplete JSON
-            }
-          }
-        }
-      }
-
-      onComplete(summaryText);
+      await makeStreamingRequest('dashscope', this.apiKey, this.apiUrl, headers, requestBody, onChunk, onComplete, onError);
     } catch (error) {
       console.error('DashScope comment summary error:', error);
-      onError(error);
+      if (onError) {
+        onError(error);
+      }
     }
   }
 
@@ -392,56 +392,19 @@ class GLMService extends AITranslationService {
         temperature: 0.6
       };
 
-      const response = await fetch(this.apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Accept': 'text/event-stream'
-        },
-        body: JSON.stringify(requestBody)
-      });
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Accept': 'text/event-stream'
+      };
 
-      if (!response.ok) {
-        throw new Error(`GLM API request failed: ${response.status} ${response.statusText}`);
-      }
-
-      const reader = response.body.getReader();
-      let translatedText = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = new TextDecoder().decode(value);
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6).trim();
-            if (data === '[DONE]') {
-              if (onComplete) onComplete(translatedText);
-              return;
-            }
-            
-            try {
-              const parsed = JSON.parse(data);
-              if (parsed.choices && parsed.choices[0] && parsed.choices[0].delta && parsed.choices[0].delta.content) {
-                const content = parsed.choices[0].delta.content;
-                translatedText += content;
-                if (onChunk) onChunk(content);
-              }
-            } catch (parseError) {
-              console.error('Error parsing GLM streaming response:', parseError);
-            }
-          }
-        }
-      }
+      await makeStreamingRequest('glm', this.apiKey, this.apiUrl, headers, requestBody, onChunk, onComplete, onError);
 
     } catch (error) {
       console.error('GLM translation error:', error);
-      if (onError) onError(error);
-      throw error;
+      if (onError) {
+        onError(error);
+      }
     }
   }
 
@@ -470,56 +433,18 @@ class GLMService extends AITranslationService {
         temperature: 0.6
       };
 
-      const response = await fetch(this.apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Accept': 'text/event-stream'
-        },
-        body: JSON.stringify(requestBody)
-      });
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Accept': 'text/event-stream'
+      };
 
-      if (!response.ok) {
-        throw new Error(`GLM API request failed: ${response.status} ${response.statusText}`);
-      }
-
-      const reader = response.body.getReader();
-      let summaryText = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = new TextDecoder().decode(value);
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6).trim();
-            if (data === '[DONE]') {
-              if (onComplete) onComplete(summaryText);
-              return;
-            }
-            
-            try {
-              const parsed = JSON.parse(data);
-              if (parsed.choices && parsed.choices[0] && parsed.choices[0].delta && parsed.choices[0].delta.content) {
-                const content = parsed.choices[0].delta.content;
-                summaryText += content;
-                if (onChunk) onChunk(content);
-              }
-            } catch (parseError) {
-              console.error('Error parsing GLM streaming response:', parseError);
-            }
-          }
-        }
-      }
-
+      await makeStreamingRequest('glm', this.apiKey, this.apiUrl, headers, requestBody, onChunk, onComplete, onError);
     } catch (error) {
       console.error('GLM comment summary error:', error);
-      if (onError) onError(error);
-      throw error;
+      if (onError) {
+        onError(error);
+      }
     }
   }
 
@@ -588,69 +513,17 @@ class OpenAIService extends AITranslationService {
         temperature: 0.6
       };
 
-      const response = await fetch(this.apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Accept': 'text/event-stream'
-        },
-        body: JSON.stringify(requestBody)
-      });
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Accept': 'text/event-stream'
+      };
 
-      if (!response.ok) {
-        let errorDetails = '';
-        try {
-          const err = await response.json();
-          errorDetails = err && err.error && err.error.message ? `: ${err.error.message}` : '';
-        } catch (e) {
-          try {
-            errorDetails = `: ${await response.text()}`;
-          } catch (e2) {
-            errorDetails = '';
-          }
-        }
-        throw new Error(`OpenAI API request failed: ${response.status} ${response.statusText}${errorDetails}`);
-      }
-
-      const reader = response.body.getReader();
-      let translatedText = '';
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed.startsWith('data:')) continue;
-
-          const data = trimmed.slice(5).trim();
-          if (!data) continue;
-          if (data === '[DONE]') {
-            if (onComplete) onComplete(translatedText);
-            return;
-          }
-
-          try {
-            const parsed = JSON.parse(data);
-            const deltaContent = parsed?.choices?.[0]?.delta?.content;
-            if (deltaContent) {
-              translatedText += deltaContent;
-              if (onChunk) onChunk(deltaContent, translatedText);
-            }
-          } catch (parseError) {
-          }
-        }
-      }
-
-      if (onComplete) onComplete(translatedText);
+      await makeStreamingRequest('openai', this.apiKey, this.apiUrl, headers, requestBody, onChunk, onComplete, onError);
     } catch (error) {
-      if (onError) onError(error);
-      throw error;
+      if (onError) {
+        onError(error);
+      }
     }
   }
 
@@ -678,69 +551,17 @@ class OpenAIService extends AITranslationService {
         temperature: 0.6
       };
 
-      const response = await fetch(this.apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Accept': 'text/event-stream'
-        },
-        body: JSON.stringify(requestBody)
-      });
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Accept': 'text/event-stream'
+      };
 
-      if (!response.ok) {
-        let errorDetails = '';
-        try {
-          const err = await response.json();
-          errorDetails = err && err.error && err.error.message ? `: ${err.error.message}` : '';
-        } catch (e) {
-          try {
-            errorDetails = `: ${await response.text()}`;
-          } catch (e2) {
-            errorDetails = '';
-          }
-        }
-        throw new Error(`OpenAI API request failed: ${response.status} ${response.statusText}${errorDetails}`);
-      }
-
-      const reader = response.body.getReader();
-      let summaryText = '';
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed.startsWith('data:')) continue;
-
-          const data = trimmed.slice(5).trim();
-          if (!data) continue;
-          if (data === '[DONE]') {
-            if (onComplete) onComplete(summaryText);
-            return;
-          }
-
-          try {
-            const parsed = JSON.parse(data);
-            const deltaContent = parsed?.choices?.[0]?.delta?.content;
-            if (deltaContent) {
-              summaryText += deltaContent;
-              if (onChunk) onChunk(deltaContent);
-            }
-          } catch (parseError) {
-          }
-        }
-      }
-
-      if (onComplete) onComplete(summaryText);
+      await makeStreamingRequest('openai', this.apiKey, this.apiUrl, headers, requestBody, onChunk, onComplete, onError);
     } catch (error) {
-      if (onError) onError(error);
-      throw error;
+      if (onError) {
+        onError(error);
+      }
     }
   }
 }
@@ -774,69 +595,17 @@ class DeepSeekService extends AITranslationService {
         temperature: 0.6
       };
 
-      const response = await fetch(this.apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Accept': 'text/event-stream'
-        },
-        body: JSON.stringify(requestBody)
-      });
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Accept': 'text/event-stream'
+      };
 
-      if (!response.ok) {
-        let errorDetails = '';
-        try {
-          const err = await response.json();
-          errorDetails = err && err.error && err.error.message ? `: ${err.error.message}` : '';
-        } catch (e) {
-          try {
-            errorDetails = `: ${await response.text()}`;
-          } catch (e2) {
-            errorDetails = '';
-          }
-        }
-        throw new Error(`DeepSeek API request failed: ${response.status} ${response.statusText}${errorDetails}`);
-      }
-
-      const reader = response.body.getReader();
-      let translatedText = '';
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed.startsWith('data:')) continue;
-
-          const data = trimmed.slice(5).trim();
-          if (!data) continue;
-          if (data === '[DONE]') {
-            if (onComplete) onComplete(translatedText);
-            return;
-          }
-
-          try {
-            const parsed = JSON.parse(data);
-            const deltaContent = parsed?.choices?.[0]?.delta?.content;
-            if (deltaContent) {
-              translatedText += deltaContent;
-              if (onChunk) onChunk(deltaContent, translatedText);
-            }
-          } catch (parseError) {
-          }
-        }
-      }
-
-      if (onComplete) onComplete(translatedText);
+      await makeStreamingRequest('deepseek', this.apiKey, this.apiUrl, headers, requestBody, onChunk, onComplete, onError);
     } catch (error) {
-      if (onError) onError(error);
-      throw error;
+      if (onError) {
+        onError(error);
+      }
     }
   }
 
@@ -864,69 +633,17 @@ class DeepSeekService extends AITranslationService {
         temperature: 0.6
       };
 
-      const response = await fetch(this.apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Accept': 'text/event-stream'
-        },
-        body: JSON.stringify(requestBody)
-      });
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Accept': 'text/event-stream'
+      };
 
-      if (!response.ok) {
-        let errorDetails = '';
-        try {
-          const err = await response.json();
-          errorDetails = err && err.error && err.error.message ? `: ${err.error.message}` : '';
-        } catch (e) {
-          try {
-            errorDetails = `: ${await response.text()}`;
-          } catch (e2) {
-            errorDetails = '';
-          }
-        }
-        throw new Error(`DeepSeek API request failed: ${response.status} ${response.statusText}${errorDetails}`);
-      }
-
-      const reader = response.body.getReader();
-      let summaryText = '';
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed.startsWith('data:')) continue;
-
-          const data = trimmed.slice(5).trim();
-          if (!data) continue;
-          if (data === '[DONE]') {
-            if (onComplete) onComplete(summaryText);
-            return;
-          }
-
-          try {
-            const parsed = JSON.parse(data);
-            const deltaContent = parsed?.choices?.[0]?.delta?.content;
-            if (deltaContent) {
-              summaryText += deltaContent;
-              if (onChunk) onChunk(deltaContent);
-            }
-          } catch (parseError) {
-          }
-        }
-      }
-
-      if (onComplete) onComplete(summaryText);
+      await makeStreamingRequest('deepseek', this.apiKey, this.apiUrl, headers, requestBody, onChunk, onComplete, onError);
     } catch (error) {
-      if (onError) onError(error);
-      throw error;
+      if (onError) {
+        onError(error);
+      }
     }
   }
 }
