@@ -1,4 +1,4 @@
-// Background Service Worker for Reddit Reader 2
+// Background Service Worker for Reddit Reader
 // Handles API requests to avoid CORS issues
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {

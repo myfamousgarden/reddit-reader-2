@@ -1,4 +1,4 @@
-# Icons for Reddit Reader 2
+# Icons for Reddit Reader
 
 ## Current Status
 The extension currently works without custom icons. Chrome will use a default icon.
@@ -34,7 +34,7 @@ Once you have the PNG files, add this to your `manifest.json`:
 ```json
 {
   "manifest_version": 3,
-  "name": "Reddit Reader 2",
+  "name": "Reddit Reader",
   "version": "1.0.0",
   "description": "Enhanced Reddit reading experience with floating panel",
   "permissions": [

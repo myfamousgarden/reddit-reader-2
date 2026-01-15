@@ -1,4 +1,4 @@
-// Reddit Reader 2 - Content Script
+// Reddit Reader - Content Script
 class RedditReader2 {
   constructor() {
     this.isInitialized = false;
@@ -74,7 +74,7 @@ class RedditReader2 {
     this.floatingPanel.className = 'reddit-reader-2-floating-panel';
     this.floatingPanel.innerHTML = `
       <div class="reddit-reader-2-panel-header">
-        <h3>Reddit Reader 2</h3>
+        <h3>Reddit Reader</h3>
         <button class="reddit-reader-2-close-btn" id="reddit-reader-2-close">×</button>
       </div>
       <div class="reddit-reader-2-panel-content">
@@ -591,7 +591,7 @@ class RedditReader2 {
     const contentDiv = this.floatingPanel.querySelector('.reddit-reader-2-panel-content');
     contentDiv.innerHTML = `
       <div class="reddit-reader-2-welcome">
-        <h4>Reddit Reader 2</h4>
+        <h4>Reddit Reader</h4>
         <p>Navigate to a Reddit post to see its content here.</p>
         <p>This extension works on Reddit post pages like:</p>
         <ul>

@@ -1,6 +1,8 @@
-# Reddit Reader 2
+# Reddit Reader
 
 A Chrome extension that provides an enhanced Reddit reading experience with a floating panel interface.
+
+[Watch the introduction video](https://www.youtube.com/watch?v=ctJK3s_vvuA)
 
 ## Features
 
@@ -17,6 +19,8 @@ A Chrome extension that provides an enhanced Reddit reading experience with a fl
 - **Independent Scrolling**: Panel content area scrolls independently when content exceeds available space
 - **Right-Aligned**: Panel aligns perfectly with browser window edge
 - **Sharp Design**: Clean edges without rounded corners for a modern look
+- **Auto-Load Comments**: Automatically scrolls to load all comments for comprehensive analysis
+- **Download as CSV**: Export Reddit comments to a CSV file for offline analysis
 
 ## Architecture
 

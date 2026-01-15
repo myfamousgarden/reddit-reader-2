@@ -3,7 +3,7 @@
 ## Single Purpose Description
 
 ```
-Reddit Reader 2 enhances the Reddit reading experience by providing AI-powered translation and comment summarization. Users can translate Reddit posts into their preferred language and get AI-generated summaries of comment discussions using their own API keys from supported AI providers (DashScope, GLM, OpenAI, or DeepSeek).
+Reddit Reader enhances the Reddit reading experience by providing AI-powered translation and comment summarization. Users can translate Reddit posts into their preferred language and get AI-generated summaries of comment discussions using their own API keys from supported AI providers (DashScope, GLM, OpenAI, or DeepSeek).
 ```
 
 ---

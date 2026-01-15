@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Reddit Reader 2",
-  "version": "1.0.1",
+  "name": "Reddit Reader",
+  "version": "1.0.2",
   "description": "AI-powered Reddit enhancement: translate posts, summarize comments with DashScope, GLM, OpenAI, or DeepSeek",
   "permissions": [
     "activeTab",
@@ -26,7 +26,7 @@
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Reddit Reader 2"
+    "default_title": "Reddit Reader"
   },
   "icons": {
     "16": "icons/icon16.png",

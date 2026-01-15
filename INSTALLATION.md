@@ -1,4 +1,4 @@
-# Reddit Reader 2 - Installation Guide
+# Reddit Reader - Installation Guide
 
 ## 📦 Installation Steps
 
@@ -32,7 +32,7 @@ reddit_reader_2/
 
 4. **Verify Installation**
    - The extension should appear in your extensions list
-   - You should see "Reddit Reader 2" with a toggle switch
+   - You should see "Reddit Reader" with a toggle switch
    - Make sure it's enabled (toggle should be blue/on)
 
 ### 3. Test the Extension

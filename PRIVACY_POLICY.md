@@ -1,10 +1,10 @@
-# Privacy Policy for Reddit Reader 2
+# Privacy Policy for Reddit Reader
 
 **Last Updated: January 9, 2026**
 
 ## Overview
 
-Reddit Reader 2 ("the Extension") is a browser extension that enhances the Reddit reading experience by providing AI-powered translation and comment summarization features. This privacy policy explains how we handle your data.
+Reddit Reader ("the Extension") is a browser extension that enhances the Reddit reading experience by providing AI-powered translation and comment summarization features. This privacy policy explains how we handle your data.
 
 ## Data Collection and Usage
 

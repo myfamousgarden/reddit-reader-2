@@ -1,4 +1,4 @@
-// Reddit Reader 2 - Popup Script
+// Reddit Reader - Popup Script
 
 document.addEventListener('DOMContentLoaded', function() {
   // Check if the extension is working
