@@ -1149,6 +1149,12 @@ if (!redditReader2Instance) {
   window.redditReader2Instance = redditReader2Instance;
 }
 
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+  if (request && request.action === 'ping') {
+    sendResponse({ ok: true });
+  }
+});
+
 // Handle dynamic content loading (for SPAs)
 let lastUrl = location.href;
 new MutationObserver(() => {

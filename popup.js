@@ -13,23 +13,61 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function checkExtensionStatus() {
   const statusElement = document.getElementById('status');
-  
-  // Query the active tab to check if content script is loaded
-  chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-    if (tabs[0]) {
-      // Try to communicate with content script
-      chrome.tabs.sendMessage(tabs[0].id, { action: 'ping' }, function(response) {
-        if (chrome.runtime.lastError) {
-          // Content script not loaded or not responding
-          statusElement.textContent = '⚠️ Please refresh the page';
-          statusElement.className = 'status';
-        } else {
-          // Content script is working
-          statusElement.textContent = '✅ Extension Active';
-          statusElement.className = 'status active';
-        }
-      });
+
+  function setStatus(text, isActive) {
+    if (!statusElement) return;
+    statusElement.textContent = text;
+    statusElement.className = isActive ? 'status active' : 'status';
+  }
+
+  function isRedditUrl(url) {
+    try {
+      const parsed = new URL(url);
+      const host = parsed.hostname;
+      return host === 'reddit.com' || host.endsWith('.reddit.com');
+    } catch (e) {
+      return false;
     }
+  }
+
+  function pingTab(tabId, onDone) {
+    chrome.tabs.sendMessage(tabId, { action: 'ping' }, function(response) {
+      const err = chrome.runtime.lastError;
+      onDone(err, response);
+    });
+  }
+
+  setStatus('Checking...', false);
+
+  chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+    const tab = tabs && tabs[0];
+    if (!tab || typeof tab.id !== 'number') {
+      setStatus('No active tab', false);
+      return;
+    }
+
+    const tabUrl = tab.url || '';
+    if (tabUrl && !isRedditUrl(tabUrl)) {
+      setStatus('Open a Reddit page', false);
+      return;
+    }
+
+    pingTab(tab.id, function(err) {
+      if (err) {
+        setTimeout(() => {
+          pingTab(tab.id, function(retryErr) {
+            if (retryErr) {
+              setStatus('⚠️ Please refresh the page', false);
+            } else {
+              setStatus('✅ Extension Active', true);
+            }
+          });
+        }, 700);
+        return;
+      }
+
+      setStatus('✅ Extension Active', true);
+    });
   });
 }
 

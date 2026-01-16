@@ -15,7 +15,7 @@
   ],
   "content_scripts": [
     {
-      "matches": ["*://www.reddit.com/*", "*://old.reddit.com/*", "*://new.reddit.com/*"],
+      "matches": ["*://reddit.com/*", "*://*.reddit.com/*"],
       "js": ["ai-services.js", "content.js"],
       "css": ["content.css"],
       "run_at": "document_end"
