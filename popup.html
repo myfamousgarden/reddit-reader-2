@@ -44,6 +44,87 @@
       font-size: 16px;
       font-weight: 600;
     }
+
+    .info-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 0 0 12px 0;
+    }
+
+    .info-header h3 {
+      margin: 0;
+    }
+
+    .help-tooltip {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      background: rgba(255, 255, 255, 0.12);
+      color: white;
+      font-size: 12px;
+      line-height: 1;
+      cursor: help;
+      user-select: none;
+      outline: none;
+      flex: 0 0 auto;
+    }
+
+    .help-tooltip:focus-visible {
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.25);
+    }
+
+    .tooltip-content {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      width: 240px;
+      padding: 12px;
+      border-radius: 8px;
+      background: rgba(20, 20, 30, 0.95);
+      color: white;
+      font-size: 12px;
+      line-height: 1.5;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      opacity: 0;
+      transform: translateY(-4px);
+      pointer-events: none;
+      transition: opacity 120ms ease, transform 120ms ease;
+      z-index: 9999;
+    }
+
+    .help-tooltip:hover .tooltip-content,
+    .help-tooltip:focus .tooltip-content,
+    .help-tooltip:focus-within .tooltip-content {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .tooltip-content h4 {
+      margin: 0 0 8px 0;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .tooltip-content ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .tooltip-content li {
+      margin-bottom: 6px;
+    }
+
+    .tooltip-content li:last-child {
+      margin-bottom: 0;
+    }
     
     .info ul {
       margin: 0;
@@ -76,7 +157,22 @@
   </div>
   
   <div class="info">
-    <h3>Translation Settings:</h3>
+    <div class="info-header">
+      <h3>Settings:</h3>
+      <span class="help-tooltip" tabindex="0" role="button" aria-label="How to use">
+        ?
+        <div class="tooltip-content" role="tooltip">
+          <h4>How to Use:</h4>
+          <ul>
+            <li>Select your preferred AI service provider</li>
+            <li>Configure your API key above</li>
+            <li>Look for the floating button on Reddit pages</li>
+            <li>Click the button to open the side panel</li>
+            <li>Use the "Analyze" button to get insights</li>
+          </ul>
+        </div>
+      </span>
+    </div>
     <div style="margin-bottom: 12px;">
       <label for="aiProvider" style="display: block; margin-bottom: 4px; font-size: 13px;">AI Service Provider:</label>
       <select id="aiProvider" style="width: 100%; padding: 8px; border: none; border-radius: 4px; font-size: 13px; box-sizing: border-box; background: white; color: #333;">
@@ -110,17 +206,6 @@
       Save Settings
     </button>
     <div id="saveStatus" style="margin-top: 8px; font-size: 12px; text-align: center; opacity: 0;"></div>
-  </div>
-
-  <div class="info">
-    <h3>How to Use:</h3>
-    <ul>
-      <li>Select your preferred AI service provider</li>
-      <li>Configure your API key above</li>
-      <li>Look for the floating button on Reddit pages</li>
-      <li>Click the button to open the side panel</li>
-      <li>Use the "Analyze" button to get insights</li>
-    </ul>
   </div>
   
   <div class="status active" id="status">
