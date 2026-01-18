@@ -125,6 +125,111 @@
     .tooltip-content li:last-child {
       margin-bottom: 0;
     }
+
+    .settings-row {
+      margin-bottom: 12px;
+    }
+
+    .settings-row label {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+
+    .settings-select {
+      width: 100%;
+      padding: 8px;
+      border: none;
+      border-radius: 4px;
+      font-size: 13px;
+      box-sizing: border-box;
+      background: white;
+      color: #333;
+    }
+
+    .mode-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .mode-option {
+      flex: 1 1 0;
+    }
+
+    .mode-option input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .mode-option span {
+      display: block;
+      padding: 8px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      font-size: 12px;
+      text-align: center;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .mode-option input:checked + span {
+      background: rgba(255, 255, 255, 0.26);
+      border-color: rgba(255, 255, 255, 0.6);
+    }
+
+    .mode-option input:focus-visible + span {
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.25);
+    }
+
+    .settings-note {
+      margin-top: 6px;
+      font-size: 12px;
+      opacity: 0.9;
+      line-height: 1.4;
+    }
+
+    .backend-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .backend-url {
+      font-size: 12px;
+      opacity: 0.9;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 180px;
+    }
+
+    .backend-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+
+    .backend-login-btn {
+      padding: 6px 10px;
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .backend-login-status {
+      font-size: 12px;
+      opacity: 0.9;
+      text-align: right;
+      max-width: 90px;
+    }
     
     .info ul {
       margin: 0;
@@ -159,32 +264,66 @@
   <div class="info">
     <div class="info-header">
       <h3>Settings:</h3>
-      <span class="help-tooltip" tabindex="0" role="button" aria-label="How to use">
+      <span class="help-tooltip" id="helpTooltip" tabindex="0" role="button" aria-label="How to use">
         ?
-        <div class="tooltip-content" role="tooltip">
-          <h4>How to Use:</h4>
-          <ul>
-            <li>Select your preferred AI service provider</li>
-            <li>Configure your API key above</li>
-            <li>Look for the floating button on Reddit pages</li>
-            <li>Click the button to open the side panel</li>
-            <li>Use the "Analyze" button to get insights</li>
-          </ul>
-        </div>
+        <div class="tooltip-content" id="helpTooltipContent" role="tooltip"></div>
       </span>
     </div>
-    <div style="margin-bottom: 12px;">
-      <label for="aiProvider" style="display: block; margin-bottom: 4px; font-size: 13px;">AI Service Provider:</label>
-      <select id="aiProvider" style="width: 100%; padding: 8px; border: none; border-radius: 4px; font-size: 13px; box-sizing: border-box; background: white; color: #333;">
+    <template id="tooltipTemplateApiKey">
+      <h4>How to Use:</h4>
+      <ul>
+        <li>Select your preferred AI service provider</li>
+        <li>Configure your API key above</li>
+        <li>Look for the floating button on Reddit pages</li>
+        <li>Click the button to open the side panel</li>
+        <li>Use the "Analyze" button to get insights</li>
+      </ul>
+    </template>
+    <template id="tooltipTemplateBackend">
+      <h4>How to Use (Backend Proxy):</h4>
+      <ul>
+        <li>Select Backend Proxy mode</li>
+        <li>Click Login to sign in on the backend website</li>
+        <li>Return to Reddit and open the side panel</li>
+        <li>Click Analyze to get results from the backend</li>
+        <li>You can switch back to API Key mode anytime</li>
+      </ul>
+    </template>
+    <div class="settings-row">
+      <label>Mode:</label>
+      <div class="mode-group" role="radiogroup" aria-label="Mode">
+        <label class="mode-option">
+          <input type="radio" name="mode" id="modeApiKey" value="apiKey" checked>
+          <span>API Key (Direct)</span>
+        </label>
+        <label class="mode-option">
+          <input type="radio" name="mode" id="modeBackend" value="backend">
+          <span>Backend Proxy</span>
+        </label>
+      </div>
+      <div id="backendSection" style="display: none;">
+        <div class="settings-note">No API key needed. The extension sends content to Reddit Reader backend server.</div>
+        <div class="backend-row">
+          <div class="backend-url" title="http://localhost:3000">http://localhost:3000</div>
+          <div class="backend-actions">
+            <button id="backendLogin" class="backend-login-btn" type="button">Login</button>
+            <div id="backendLoginStatus" class="backend-login-status">Not checked</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="settings-row" id="providerRow">
+      <label for="aiProvider">AI Service Provider:</label>
+      <select id="aiProvider" class="settings-select">
         <option value="dashscope">Alibaba Cloud (DashScope)</option>
         <option value="glm">Zhipu AI (GLM)</option>
         <option value="openai">OpenAI</option>
         <option value="deepseek">DeepSeek</option>
       </select>
     </div>
-    <div style="margin-bottom: 12px;">
-      <label for="targetLanguage" style="display: block; margin-bottom: 4px; font-size: 13px;">Target Language:</label>
-      <select id="targetLanguage" style="width: 100%; padding: 8px; border: none; border-radius: 4px; font-size: 13px; box-sizing: border-box; background: white; color: #333;">
+    <div class="settings-row">
+      <label for="targetLanguage">Target Language:</label>
+      <select id="targetLanguage" class="settings-select">
         <option value="zh">Chinese (中文)</option>
         <option value="en">English</option>
         <option value="es">Spanish (Español)</option>
@@ -197,9 +336,9 @@
         <option value="fr">French (Français)</option>
       </select>
     </div>
-    <div style="margin-bottom: 12px;">
-      <label for="apiKey" style="display: block; margin-bottom: 4px; font-size: 13px;" id="apiKeyLabel">API Key:</label>
-      <input type="password" id="apiKey" placeholder="Enter your API key" 
+    <div class="settings-row" id="apiKeyRow">
+      <label for="apiKey" id="apiKeyLabel">API Key:</label>
+      <input type="password" id="apiKey" placeholder="Enter your API key"
              style="width: 100%; padding: 8px; border: none; border-radius: 4px; font-size: 13px; box-sizing: border-box;">
     </div>
     <button id="saveSettings" style="width: 100%; padding: 8px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">

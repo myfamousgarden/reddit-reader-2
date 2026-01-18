@@ -11,6 +11,11 @@ document.addEventListener('DOMContentLoaded', function() {
   setupEventListeners();
 });
 
+function getSelectedMode() {
+  const selected = document.querySelector('input[name="mode"]:checked');
+  return selected ? selected.value : 'apiKey';
+}
+
 function checkExtensionStatus() {
   const statusElement = document.getElementById('status');
 
@@ -81,7 +86,16 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 
 // Load saved settings
 function loadSettings() {
-  chrome.storage.sync.get(['aiProvider', 'dashscopeApiKey', 'glmApiKey', 'openaiApiKey', 'deepseekApiKey', 'targetLanguage'], function(result) {
+  chrome.storage.sync.get(['mode', 'aiProvider', 'dashscopeApiKey', 'glmApiKey', 'openaiApiKey', 'deepseekApiKey', 'targetLanguage'], function(result) {
+    const mode = result.mode || 'apiKey';
+    const modeApiKey = document.getElementById('modeApiKey');
+    const modeBackend = document.getElementById('modeBackend');
+    if (modeApiKey && modeBackend) {
+      modeApiKey.checked = mode === 'apiKey';
+      modeBackend.checked = mode === 'backend';
+    }
+    updateModeUI(mode);
+
     // Set AI provider
     const aiProvider = result.aiProvider || 'dashscope';
     document.getElementById('aiProvider').value = aiProvider;
@@ -110,6 +124,9 @@ function setupEventListeners() {
   const saveButton = document.getElementById('saveSettings');
   const apiKeyInput = document.getElementById('apiKey');
   const aiProviderSelect = document.getElementById('aiProvider');
+  const modeApiKey = document.getElementById('modeApiKey');
+  const modeBackend = document.getElementById('modeBackend');
+  const backendLoginButton = document.getElementById('backendLogin');
   
   saveButton.addEventListener('click', saveSettings);
   
@@ -131,6 +148,24 @@ function setupEventListeners() {
       apiKeyField.value = result[`${provider}ApiKey`] || '';
     });
   });
+
+  function handleModeChange() {
+    updateModeUI(getSelectedMode());
+  }
+
+  if (modeApiKey) {
+    modeApiKey.addEventListener('change', handleModeChange);
+  }
+
+  if (modeBackend) {
+    modeBackend.addEventListener('change', handleModeChange);
+  }
+
+  if (backendLoginButton) {
+    backendLoginButton.addEventListener('click', function() {
+      chrome.tabs.create({ url: 'http://localhost:3000/singup' });
+    });
+  }
 }
 
 // Save settings
@@ -138,20 +173,24 @@ function saveSettings() {
   const apiKey = document.getElementById('apiKey').value.trim();
   const aiProvider = document.getElementById('aiProvider').value;
   const targetLanguage = document.getElementById('targetLanguage').value;
+  const mode = getSelectedMode();
   const saveStatus = document.getElementById('saveStatus');
   
-  if (!apiKey) {
+  if (mode === 'apiKey' && !apiKey) {
     showSaveStatus('Please enter an API key', 'error');
     return;
   }
   
   const settings = {
+    mode: mode,
     aiProvider: aiProvider,
     targetLanguage: targetLanguage
   };
   
   // Save API key with provider-specific key
-  settings[`${aiProvider}ApiKey`] = apiKey;
+  if (mode === 'apiKey') {
+    settings[`${aiProvider}ApiKey`] = apiKey;
+  }
   
   chrome.storage.sync.set(settings, function() {
     if (chrome.runtime.lastError) {
@@ -160,6 +199,42 @@ function saveSettings() {
       showSaveStatus('Settings saved successfully!', 'success');
     }
   });
+}
+
+function updateModeUI(mode) {
+  const providerRow = document.getElementById('providerRow');
+  const apiKeyRow = document.getElementById('apiKeyRow');
+  const backendSection = document.getElementById('backendSection');
+
+  const isBackend = mode === 'backend';
+
+  if (providerRow) {
+    providerRow.style.display = isBackend ? 'none' : '';
+  }
+
+  if (apiKeyRow) {
+    apiKeyRow.style.display = isBackend ? 'none' : '';
+  }
+
+  if (backendSection) {
+    backendSection.style.display = isBackend ? '' : 'none';
+  }
+
+  updateHelpTooltip(mode);
+}
+
+function updateHelpTooltip(mode) {
+  const tooltipContent = document.getElementById('helpTooltipContent');
+  const helpTooltip = document.getElementById('helpTooltip');
+  const templateId = mode === 'backend' ? 'tooltipTemplateBackend' : 'tooltipTemplateApiKey';
+  const template = document.getElementById(templateId);
+
+  if (helpTooltip) {
+    helpTooltip.setAttribute('aria-label', mode === 'backend' ? 'How to use backend proxy' : 'How to use');
+  }
+
+  if (!tooltipContent || !template) return;
+  tooltipContent.innerHTML = template.innerHTML;
 }
 
 // Update API key field based on provider
