@@ -166,17 +166,23 @@
       display: block;
       padding: 8px;
       border-radius: 6px;
-      background: rgba(255, 255, 255, 0.12);
-      border: 1px solid rgba(255, 255, 255, 0.25);
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.14);
       font-size: 12px;
       text-align: center;
       cursor: pointer;
       user-select: none;
+      opacity: 0.72;
+      transition: background 140ms ease, border-color 140ms ease, opacity 140ms ease, box-shadow 140ms ease, transform 140ms ease;
     }
 
     .mode-option input:checked + span {
-      background: rgba(255, 255, 255, 0.26);
-      border-color: rgba(255, 255, 255, 0.6);
+      background: rgba(255, 255, 255, 0.36);
+      border-color: rgba(255, 255, 255, 0.95);
+      opacity: 1;
+      font-weight: 600;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35), 0 10px 24px rgba(0, 0, 0, 0.22);
+      transform: translateY(-1px);
     }
 
     .mode-option input:focus-visible + span {
@@ -302,12 +308,12 @@
         </label>
       </div>
       <div id="backendSection" style="display: none;">
-        <div class="settings-note">No API key needed. The extension sends content to Reddit Reader backend server.</div>
+        <div class="settings-note">No API key needed. The extension uses your backend session.</div>
         <div class="backend-row">
           <div class="backend-url" title="http://localhost:3000">http://localhost:3000</div>
           <div class="backend-actions">
             <button id="backendLogin" class="backend-login-btn" type="button">Login</button>
-            <div id="backendLoginStatus" class="backend-login-status">Not checked</div>
+            <div id="backendLoginStatus" class="backend-login-status">—</div>
           </div>
         </div>
       </div>

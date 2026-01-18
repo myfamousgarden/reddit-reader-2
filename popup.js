@@ -3,7 +3,7 @@
 document.addEventListener('DOMContentLoaded', function() {
   // Check if the extension is working
   checkExtensionStatus();
-  
+
   // Load saved settings
   loadSettings();
   
@@ -11,9 +11,87 @@ document.addEventListener('DOMContentLoaded', function() {
   setupEventListeners();
 });
 
+const backendConfig = {
+  baseUrl: 'http://localhost:3000'
+};
+
 function getSelectedMode() {
   const selected = document.querySelector('input[name="mode"]:checked');
   return selected ? selected.value : 'apiKey';
+}
+
+function getExtensionId() {
+  return chrome.runtime && chrome.runtime.id ? chrome.runtime.id : '';
+}
+
+function getBackendCallbackUrl() {
+  const id = getExtensionId();
+  return id ? `chrome-extension://${id}/auth-callback.html` : '';
+}
+
+function buildBackendLoginUrl() {
+  const base = `${backendConfig.baseUrl.replace(/\/$/, '')}/signup`;
+  const url = new URL(base);
+  const callbackUrl = getBackendCallbackUrl();
+  if (callbackUrl) {
+    url.searchParams.set('callbackUrl', callbackUrl);
+  }
+  return url.toString();
+}
+
+function setBackendLoginStatus(text) {
+  const statusEl = document.getElementById('backendLoginStatus');
+  if (!statusEl) return;
+  statusEl.textContent = text;
+}
+
+function setBackendLoginButtonVisible(visible) {
+  const buttonEl = document.getElementById('backendLogin');
+  if (!buttonEl) return;
+  buttonEl.style.display = visible ? '' : 'none';
+}
+
+function refreshBackendAuthStatus() {
+  const mode = getSelectedMode();
+  if (mode !== 'backend') return;
+
+  setBackendLoginButtonVisible(true);
+  setBackendLoginStatus('Checking...');
+
+  chrome.storage.sync.get(['backendAuthToken'], function(result) {
+    const token = result.backendAuthToken || '';
+    if (!token) {
+      setBackendLoginButtonVisible(true);
+      setBackendLoginStatus('Login required');
+      return;
+    }
+
+    chrome.runtime.sendMessage(
+      { action: 'backendAuthStatus', backendBaseUrl: backendConfig.baseUrl, token: token },
+      function(response) {
+        if (chrome.runtime.lastError || !response) {
+          setBackendLoginButtonVisible(true);
+          setBackendLoginStatus('Backend offline');
+          return;
+        }
+
+        if (response.ok && response.loggedIn) {
+          setBackendLoginButtonVisible(false);
+          setBackendLoginStatus('Logged in');
+          return;
+        }
+
+        if (response.ok && response.loggedIn === false) {
+          setBackendLoginButtonVisible(true);
+          setBackendLoginStatus('Login required');
+          return;
+        }
+
+        setBackendLoginButtonVisible(true);
+        setBackendLoginStatus('Backend error');
+      }
+    );
+  });
 }
 
 function checkExtensionStatus() {
@@ -116,6 +194,8 @@ function loadSettings() {
     } else if (aiProvider === 'deepseek' && result.deepseekApiKey) {
       document.getElementById('apiKey').value = result.deepseekApiKey;
     }
+
+    refreshBackendAuthStatus();
   });
 }
 
@@ -151,6 +231,7 @@ function setupEventListeners() {
 
   function handleModeChange() {
     updateModeUI(getSelectedMode());
+    refreshBackendAuthStatus();
   }
 
   if (modeApiKey) {
@@ -163,7 +244,7 @@ function setupEventListeners() {
 
   if (backendLoginButton) {
     backendLoginButton.addEventListener('click', function() {
-      chrome.tabs.create({ url: 'http://localhost:3000/singup' });
+      chrome.tabs.create({ url: buildBackendLoginUrl() });
     });
   }
 }

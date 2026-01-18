@@ -16,7 +16,53 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Return true to indicate we will send a response asynchronously
     return true;
   }
+
+  if (request.action === 'backendAuthStatus') {
+    handleBackendAuthStatus(request)
+      .then(result => sendResponse(result))
+      .catch(error => sendResponse({ ok: false, error: error && error.message ? error.message : String(error) }));
+    return true;
+  }
 });
+
+async function handleBackendAuthStatus(request) {
+  const backendBaseUrl = request.backendBaseUrl || 'http://localhost:3000';
+  const token = request.token || '';
+
+  if (!token) {
+    return { ok: true, loggedIn: false, reason: 'missing_token' };
+  }
+
+  const url = `${backendBaseUrl.replace(/\/$/, '')}/api/auth/status`;
+  let response;
+  try {
+    response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  } catch (e) {
+    return { ok: false, loggedIn: false, reason: 'unreachable' };
+  }
+
+  if (response.status === 401) {
+    return { ok: true, loggedIn: false };
+  }
+
+  if (!response.ok) {
+    return { ok: false, loggedIn: false, reason: `http_${response.status}` };
+  }
+
+  let data = null;
+  try {
+    data = await response.json();
+  } catch (e) {
+    data = null;
+  }
+
+  return { ok: true, loggedIn: true, data: data };
+}
 
 async function handleAIStreamRequest(request, tabId) {
   const { provider, apiKey, url, headers, body, streamId } = request;
