@@ -7,6 +7,7 @@ class RedditReader2 {
     this.isPanelVisible = false;
     this.isDragging = false;
     this.dragOffset = { x: 0, y: 0 };
+    this.currentPost = null;
     
     this.init();
   }
@@ -296,6 +297,7 @@ class RedditReader2 {
     }
 
     const redditData = this.extractRedditContent();
+    this.currentPost = { ...redditData, url: window.location.href };
     const contentDiv = this.floatingPanel.querySelector('.reddit-reader-2-panel-content');
     
     if (redditData.title || redditData.content) {
@@ -401,6 +403,8 @@ class RedditReader2 {
     const translationContent = translationResult.querySelector('.translation-content');
     
     try {
+      this.currentPost = { ...redditData, url: window.location.href };
+
       // Update button state
       analyzeBtn.disabled = true;
       analyzeBtn.innerHTML = '<span class="analyze-icon">⏳</span> Analyzing...';
@@ -413,69 +417,90 @@ class RedditReader2 {
       // Show analysis result section
       analysisResult.style.display = 'block';
       translationResult.style.display = 'block';
-      translationContent.innerHTML = '<div class="translation-loading">Connecting to translation service...</div>';
-      
-      // Prepare content for translation
-      const contentToTranslate = `Title: ${redditData.title}\n\nContent: ${redditData.content}`;
+      translationContent.innerHTML = '<div class="translation-loading">Connecting...</div>';
       
       // Get settings from Chrome storage
-      const settings = await chrome.storage.sync.get(['dashscopeApiKey', 'glmApiKey', 'openaiApiKey', 'deepseekApiKey', 'aiProvider', 'targetLanguage']);
-      const aiProvider = settings.aiProvider || 'dashscope'; // Default to DashScope
-      const targetLanguage = settings.targetLanguage || 'zh'; // Default to Chinese
-      
-      // Get API key based on provider
-      let apiKey;
-      switch (aiProvider) {
-        case 'dashscope':
-          apiKey = settings.dashscopeApiKey;
-          break;
-        case 'glm':
-          apiKey = settings.glmApiKey;
-          break;
-        case 'openai':
-          apiKey = settings.openaiApiKey;
-          break;
-        case 'deepseek':
-          apiKey = settings.deepseekApiKey;
-          break;
-        default:
-          apiKey = settings.dashscopeApiKey; // Fallback
-      }
-      
-      // Create AI service instance with API key
-      const aiService = AIServiceFactory.createService(aiProvider, apiKey);
-      
-      // Validate API key
-      if (!aiService.validateApiKey(apiKey)) {
-        throw new Error(`${aiProvider} API key not configured. Please set it in the extension popup.`);
-      }
+      const settings = await chrome.storage.sync.get(['mode', 'backendAuthToken', 'dashscopeApiKey', 'glmApiKey', 'openaiApiKey', 'deepseekApiKey', 'aiProvider', 'targetLanguage']);
+      const mode = settings.mode || 'apiKey';
+      const aiProvider = settings.aiProvider || 'dashscope';
+      const targetLanguage = settings.targetLanguage || 'zh';
       
       // Clear loading message and prepare for streaming
       translationContent.innerHTML = '<div class="translation-text"></div>';
       const translationTextDiv = translationContent.querySelector('.translation-text');
       
       let translatedText = '';
+      let translationError = null;
       
-      // Step 1: Translate the post first
-      await aiService.translateStream(contentToTranslate, targetLanguage, (chunk) => {
-        translatedText += chunk;
-        translationTextDiv.textContent = translatedText;
-        
-        // Auto-scroll to bottom
-        translationResult.scrollTop = translationResult.scrollHeight;
-      });
-      
-      // Step 2: After translation is complete, show Comments Summary section and start summarization
-      setTimeout(async () => {
-        // Show Comments Summary section
-        const commentsResult = document.getElementById('commentsResult');
-        if (commentsResult) {
-          commentsResult.style.display = 'block';
+      if (mode === 'backend') {
+        const token = settings.backendAuthToken || '';
+        const backendService = new window.BackendProxyService(token, 'http://localhost:3000');
+        await backendService.translateStream(
+          this.currentPost,
+          targetLanguage,
+          (chunk) => {
+            translatedText += chunk;
+            if (translationTextDiv) {
+              translationTextDiv.textContent = translatedText;
+            }
+            translationResult.scrollTop = translationResult.scrollHeight;
+          },
+          null,
+          (err) => {
+            translationError = err;
+          }
+        );
+      } else {
+        let apiKey;
+        switch (aiProvider) {
+          case 'dashscope':
+            apiKey = settings.dashscopeApiKey;
+            break;
+          case 'glm':
+            apiKey = settings.glmApiKey;
+            break;
+          case 'openai':
+            apiKey = settings.openaiApiKey;
+            break;
+          case 'deepseek':
+            apiKey = settings.deepseekApiKey;
+            break;
+          default:
+            apiKey = settings.dashscopeApiKey;
         }
-        
-        // Start comments summarization
-        await this.summarizeCommentsAfterTranslation();
-      }, 500); // Small delay to ensure translation UI is updated
+
+        const aiService = AIServiceFactory.createService(aiProvider, apiKey);
+        if (!aiService.validateApiKey(apiKey)) {
+          throw new Error(`${aiProvider} API key not configured. Please set it in the extension popup.`);
+        }
+
+        await aiService.translateStream(
+          `Title: ${redditData.title}\n\nContent: ${redditData.content}`,
+          targetLanguage,
+          (chunk) => {
+            translatedText += chunk;
+            if (translationTextDiv) {
+              translationTextDiv.textContent = translatedText;
+            }
+            translationResult.scrollTop = translationResult.scrollHeight;
+          },
+          null,
+          (err) => {
+            translationError = err;
+          }
+        );
+      }
+
+      if (translationError) {
+        throw translationError;
+      }
+
+      const commentsResult = document.getElementById('commentsResult');
+      if (commentsResult) {
+        commentsResult.style.display = 'block';
+      }
+
+      this.summarizeCommentsAfterTranslation().catch(() => {});
       
       // Update button state to complete
       analyzeBtn.disabled = false;
@@ -793,18 +818,51 @@ class RedditReader2 {
         return;
       }
 
-      // Analyze comments
-      const analysisData = this.analyzeComments(commentsData);
-      console.log('Comments analysis:', analysisData);
-
       // Get settings
       const settings = await new Promise((resolve) => {
-        chrome.storage.sync.get(['aiProvider', 'dashscopeApiKey', 'glmApiKey', 'openaiApiKey', 'deepseekApiKey', 'targetLanguage'], resolve);
+        chrome.storage.sync.get(['mode', 'backendAuthToken', 'aiProvider', 'dashscopeApiKey', 'glmApiKey', 'openaiApiKey', 'deepseekApiKey', 'targetLanguage'], resolve);
       });
 
-      const aiService = settings.aiProvider || 'dashscope';
       const targetLanguage = settings.targetLanguage || 'zh';
+      const mode = settings.mode || 'apiKey';
+
+      if (mode === 'backend') {
+        const token = settings.backendAuthToken || '';
+        const post = this.currentPost || { title: '', content: '', url: window.location.href };
+        const backendService = new window.BackendProxyService(token, 'http://localhost:3000');
+
+        this.showCommentsLoading();
+
+        let summaryText = '';
+        let summarizeError = null;
+
+        await backendService.summarizeCommentsStream(
+          { post: post, commentsData: commentsData },
+          targetLanguage,
+          (chunk) => {
+            summaryText += chunk;
+            this.updateCommentsContent(summaryText);
+          },
+          () => {
+            this.showCommentsComplete();
+          },
+          (error) => {
+            summarizeError = error;
+          }
+        );
+
+        if (summarizeError) {
+          throw summarizeError;
+        }
+
+        return;
+      }
+
+      const aiService = settings.aiProvider || 'dashscope';
       console.log('Using AI service:', aiService, 'Target language:', targetLanguage);
+
+      const analysisData = this.analyzeComments(commentsData);
+      console.log('Comments analysis:', analysisData);
 
       // Get API key based on service
       let apiKey;
@@ -980,11 +1038,16 @@ class RedditReader2 {
     const commentsResult = document.getElementById('commentsResult');
     const commentsBtn = document.getElementById('summarizeCommentsBtn');
     
-    if (commentsResult && commentsBtn) {
+    if (commentsResult) {
       commentsResult.style.display = 'block';
+    }
+
+    if (commentsBtn) {
       commentsBtn.disabled = true;
       commentsBtn.innerHTML = '<span class="comments-icon">⏳</span> Summarizing...';
-      
+    }
+
+    if (commentsResult) {
       const contentDiv = commentsResult.querySelector('.comments-content');
       if (contentDiv) {
         contentDiv.innerHTML = '<div class="loading-text">Analyzing comments...</div>';
@@ -1126,11 +1189,16 @@ class RedditReader2 {
     const commentsResult = document.getElementById('commentsResult');
     const commentsBtn = document.getElementById('summarizeCommentsBtn');
     
-    if (commentsResult && commentsBtn) {
+    if (commentsResult) {
       commentsResult.style.display = 'block';
+    }
+
+    if (commentsBtn) {
       commentsBtn.disabled = false;
       commentsBtn.innerHTML = '<span class="comments-icon">💬</span> Summarize Comments';
-      
+    }
+
+    if (commentsResult) {
       const contentDiv = commentsResult.querySelector('.comments-content');
       if (contentDiv) {
         contentDiv.innerHTML = `<div class="error-text" style="color: #ff4444;">${this.escapeHtml(message)}</div>`;
