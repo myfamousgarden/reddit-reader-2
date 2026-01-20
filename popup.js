@@ -6,14 +6,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Load saved settings
   loadSettings();
+
+  updateBackendBaseUrlDisplay();
   
   // Add event listeners
   setupEventListeners();
 });
 
-const backendConfig = {
-  baseUrl: 'http://localhost:3000'
-};
+function getBackendBaseUrl() {
+  const manifest = chrome.runtime.getManifest();
+  return manifest && manifest.backendBaseUrl ? manifest.backendBaseUrl : '';
+}
 
 function getSelectedMode() {
   const selected = document.querySelector('input[name="mode"]:checked');
@@ -30,13 +33,22 @@ function getBackendCallbackUrl() {
 }
 
 function buildBackendLoginUrl() {
-  const base = `${backendConfig.baseUrl.replace(/\/$/, '')}/signup`;
+  const baseUrl = getBackendBaseUrl();
+  const base = `${baseUrl.replace(/\/$/, '')}/signup`;
   const url = new URL(base);
   const callbackUrl = getBackendCallbackUrl();
   if (callbackUrl) {
     url.searchParams.set('callbackUrl', callbackUrl);
   }
   return url.toString();
+}
+
+function updateBackendBaseUrlDisplay() {
+  const baseUrl = getBackendBaseUrl();
+  const el = document.getElementById('backendBaseUrl');
+  if (!el) return;
+  el.textContent = baseUrl;
+  el.title = baseUrl;
 }
 
 function setBackendLoginStatus(text) {
@@ -67,7 +79,7 @@ function refreshBackendAuthStatus() {
     }
 
     chrome.runtime.sendMessage(
-      { action: 'backendAuthStatus', backendBaseUrl: backendConfig.baseUrl, token: token },
+      { action: 'backendAuthStatus', backendBaseUrl: getBackendBaseUrl(), token: token },
       function(response) {
         if (chrome.runtime.lastError || !response) {
           setBackendLoginButtonVisible(true);

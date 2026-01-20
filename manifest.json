@@ -3,6 +3,7 @@
   "name": "Reddit Reader",
   "version": "1.0.2",
   "description": "AI-powered Reddit enhancement: translate posts, summarize comments with DashScope, GLM, OpenAI, or DeepSeek",
+  "backendBaseUrl": "http://localhost:3000",
   "permissions": [
     "activeTab",
     "storage"

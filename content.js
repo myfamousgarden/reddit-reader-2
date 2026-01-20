@@ -1,4 +1,9 @@
 // Reddit Reader - Content Script
+function getBackendBaseUrl() {
+  const manifest = chrome.runtime.getManifest();
+  return manifest && manifest.backendBaseUrl ? manifest.backendBaseUrl : '';
+}
+
 class RedditReader2 {
   constructor() {
     this.isInitialized = false;
@@ -434,7 +439,7 @@ class RedditReader2 {
       
       if (mode === 'backend') {
         const token = settings.backendAuthToken || '';
-        const backendService = new window.BackendProxyService(token, 'http://localhost:3000');
+        const backendService = new window.BackendProxyService(token, getBackendBaseUrl());
         await backendService.translateStream(
           this.currentPost,
           targetLanguage,
@@ -829,7 +834,7 @@ class RedditReader2 {
       if (mode === 'backend') {
         const token = settings.backendAuthToken || '';
         const post = this.currentPost || { title: '', content: '', url: window.location.href };
-        const backendService = new window.BackendProxyService(token, 'http://localhost:3000');
+        const backendService = new window.BackendProxyService(token, getBackendBaseUrl());
 
         this.showCommentsLoading();
 

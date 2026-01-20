@@ -25,8 +25,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
+function getBackendBaseUrl() {
+  const manifest = chrome.runtime.getManifest();
+  return manifest && manifest.backendBaseUrl ? manifest.backendBaseUrl : '';
+}
+
 async function handleBackendAuthStatus(request) {
-  const backendBaseUrl = request.backendBaseUrl || 'http://localhost:3000';
+  const backendBaseUrl = request.backendBaseUrl || getBackendBaseUrl();
   const token = request.token || '';
 
   if (!token) {

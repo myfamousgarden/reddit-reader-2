@@ -674,7 +674,7 @@ class DeepSeekService extends AITranslationService {
 class BackendProxyService {
   constructor(token, baseUrl) {
     this.token = token || '';
-    this.baseUrl = baseUrl || 'http://localhost:3000';
+    this.baseUrl = baseUrl || '';
   }
 
   validateToken() {
