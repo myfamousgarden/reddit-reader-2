@@ -3,7 +3,7 @@
   "name": "Reddit Reader",
   "version": "1.0.2",
   "description": "AI-powered Reddit enhancement: translate posts, summarize comments with DashScope, GLM, OpenAI, or DeepSeek",
-  "backendBaseUrl": "http://localhost:3000",
+  "backendBaseUrl": "https://reddit-reader.com",
   "permissions": [
     "activeTab",
     "storage"
@@ -13,7 +13,7 @@
     "https://open.bigmodel.cn/*",
     "https://api.openai.com/*",
     "https://api.deepseek.com/*",
-    "http://localhost:3000/*"
+    "https://reddit-reader.com/*"
   ],
   "content_scripts": [
     {
@@ -37,7 +37,7 @@
         "auth-callback.js"
       ],
       "matches": [
-        "http://localhost:3000/*"
+        "https://reddit-reader.com/*"
       ]
     }
   ],
