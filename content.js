@@ -197,12 +197,100 @@ class RedditReader2 {
     this.floatingPanel.style.right = '0px';
     this.isPanelVisible = true;
     this.floatingButton.classList.add('active');
+    this.refreshBackendLoginStatus();
   }
 
   hidePanel() {
     this.floatingPanel.style.right = '-500px';
     this.isPanelVisible = false;
     this.floatingButton.classList.remove('active');
+  }
+
+  isAnalyzeButtonBusy(analyzeBtn) {
+    if (!analyzeBtn) return false;
+    const text = analyzeBtn.textContent || '';
+    return text.includes('Analyzing') || text.includes('Loading comments');
+  }
+
+  setBackendLoginPrompt(message) {
+    if (!this.floatingPanel) return;
+    const contentDiv = this.floatingPanel.querySelector('.reddit-reader-2-panel-content');
+    if (!contentDiv) return;
+    const analyzeSection = contentDiv.querySelector('.reddit-reader-2-analyze-section');
+    if (!analyzeSection) return;
+    let prompt = analyzeSection.querySelector('.reddit-reader-2-login-prompt');
+    if (!message) {
+      if (prompt) prompt.remove();
+      return;
+    }
+    if (!prompt) {
+      prompt = document.createElement('div');
+      prompt.className = 'reddit-reader-2-login-prompt';
+      analyzeSection.insertBefore(prompt, analyzeSection.firstChild);
+    }
+    prompt.textContent = message;
+  }
+
+  async refreshBackendLoginStatus() {
+    if (!this.floatingPanel) return;
+    const contentDiv = this.floatingPanel.querySelector('.reddit-reader-2-panel-content');
+    if (!contentDiv) return;
+    const analyzeBtn = contentDiv.querySelector('#analyzeBtn');
+    if (!analyzeBtn) return;
+
+    let settings;
+    try {
+      settings = await chrome.storage.sync.get(['mode', 'backendAuthToken']);
+    } catch (e) {
+      return;
+    }
+
+    const mode = settings.mode || 'apiKey';
+    if (mode !== 'backend') {
+      this.setBackendLoginPrompt('');
+      if (!this.isAnalyzeButtonBusy(analyzeBtn)) {
+        analyzeBtn.disabled = false;
+      }
+      return;
+    }
+
+    const token = settings.backendAuthToken || '';
+    if (!token) {
+      analyzeBtn.disabled = true;
+      this.setBackendLoginPrompt('Login required. Open the extension popup to sign in.');
+      return;
+    }
+
+    this.setBackendLoginPrompt('');
+    if (!this.isAnalyzeButtonBusy(analyzeBtn)) {
+      analyzeBtn.disabled = false;
+    }
+
+    const status = await new Promise((resolve) => {
+      chrome.runtime.sendMessage(
+        { action: 'backendAuthStatus', backendBaseUrl: getBackendBaseUrl(), token: token },
+        (response) => {
+          if (chrome.runtime.lastError || !response) {
+            resolve({ ok: false });
+            return;
+          }
+          resolve(response);
+        }
+      );
+    });
+
+    if (status.ok && status.loggedIn) {
+      this.setBackendLoginPrompt('');
+      if (!this.isAnalyzeButtonBusy(analyzeBtn)) {
+        analyzeBtn.disabled = false;
+      }
+      return;
+    }
+
+    if (status.ok && status.loggedIn === false) {
+      analyzeBtn.disabled = true;
+      this.setBackendLoginPrompt('Login required. Open the extension popup to sign in.');
+    }
   }
 
   adjustPositions() {
@@ -346,6 +434,8 @@ class RedditReader2 {
               this.downloadCommentsAsCSV();
           });
       }
+
+      this.refreshBackendLoginStatus();
     } else {
       contentDiv.innerHTML = `
         <div class="reddit-reader-2-loading">

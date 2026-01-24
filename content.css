@@ -288,6 +288,16 @@
   font-size: 14px;
 }
 
+.reddit-reader-2-login-prompt {
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  background: #fff3cd;
+  border: 1px solid #ffeeba;
+  color: #856404;
+  font-size: 12px;
+  border-radius: 6px;
+}
+
 /* Analysis Result Section */
 .reddit-reader-2-analysis-result {
   margin-top: 15px;
