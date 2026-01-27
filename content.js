@@ -522,31 +522,71 @@ class RedditReader2 {
 
   // Save post to local storage
   async savePost() {
-    const post = this.currentPost;
-    if (!post) return;
-    
-    // Add timestamp and ID
-    const savedPost = {
-      ...post,
-      id: Date.now().toString(),
-      savedAt: Date.now()
-    };
+    const saveBtn = document.querySelector('#saveBtn');
     
     try {
+      // Update button state
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<span class="analyze-icon">⏳</span> Loading comments...';
+      }
+
+      // Load all comments first
+      await this.loadAllComments();
+
+      // Restore saving state text
+      if (saveBtn) {
+        saveBtn.innerHTML = '<span class="analyze-icon">💾</span> Saving...';
+      }
+
+      // Extract current post data again to capture any new content
+      const redditData = this.extractRedditContent();
+      this.currentPost = { ...redditData, url: window.location.href };
+      
+      const post = this.currentPost;
+      if (!post) throw new Error('Could not extract post content');
+
+      // Extract comments
+      const commentsData = this.extractRedditComments();
+      
+      // Add timestamp, ID, and comments
+      const savedPost = {
+        ...post,
+        id: Date.now().toString(),
+        savedAt: Date.now(),
+        commentsData: commentsData // Save full comments structure
+      };
+      
       const result = await chrome.storage.local.get(['savedPosts']);
       const savedPosts = result.savedPosts || [];
       
       // Check if already saved (by URL)
       if (savedPosts.some(p => p.url === post.url)) {
-        alert('Post already saved!');
-        return;
+        // Update existing post instead of erroring? 
+        // For now, let's stick to the previous behavior but maybe update it
+        // Actually, let's alert if it exists, or maybe overwrite?
+        // User said "save thread", implies saving current state.
+        // Let's remove the old one and add new one to update it, or just return.
+        // The original code returned alert. Let's keep it simple for now but maybe allow update later.
+        // Reverting to original "already saved" check for safety, or we could update.
+        // Let's update it if it exists! That's better UX for "Save Thread" again.
+        
+        const index = savedPosts.findIndex(p => p.url === post.url);
+        if (index !== -1) {
+          // Update existing
+          savedPosts[index] = { ...savedPost, id: savedPosts[index].id, savedAt: savedPosts[index].savedAt }; // Keep original ID/date? Or update?
+          // Let's update content but keep ID.
+        } else {
+          savedPosts.unshift(savedPost);
+        }
+      } else {
+        savedPosts.unshift(savedPost);
       }
       
-      savedPosts.unshift(savedPost);
       await chrome.storage.local.set({ savedPosts });
       
-      const saveBtn = document.querySelector('#saveBtn');
       if (saveBtn) {
+        saveBtn.disabled = false;
         saveBtn.innerHTML = '<span class="analyze-icon">✅</span> Saved';
         setTimeout(() => {
           saveBtn.innerHTML = '<span class="analyze-icon">💾</span> Save Thread';
@@ -554,7 +594,12 @@ class RedditReader2 {
       }
     } catch (error) {
       console.error('Error saving post:', error);
-      alert('Failed to save post.');
+      alert('Failed to save post: ' + error.message);
+      
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<span class="analyze-icon">💾</span> Save Thread';
+      }
     }
   }
 
