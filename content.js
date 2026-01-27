@@ -401,6 +401,10 @@ class RedditReader2 {
               <span class="analyze-icon">🔍</span>
               Analyze
             </button>
+            <button class="reddit-reader-2-analyze-btn" id="saveBtn" style="margin-left: 10px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+              <span class="analyze-icon">💾</span>
+              Save
+            </button>
             <div class="reddit-reader-2-analysis-result" id="analysisResult" style="display: none;">
               <div class="reddit-reader-2-translation-result" id="translationResult">
                 <h5>Translation:</h5>
@@ -423,6 +427,14 @@ class RedditReader2 {
       if (analyzeBtn) {
         analyzeBtn.addEventListener('click', () => {
           this.analyzePost(redditData);
+        });
+      }
+
+      // Add event listener for save button
+      const saveBtn = contentDiv.querySelector('#saveBtn');
+      if (saveBtn) {
+        saveBtn.addEventListener('click', () => {
+          this.savePost();
         });
       }
 
@@ -488,6 +500,44 @@ class RedditReader2 {
     }
     
     console.log('Finished loading comments or max retries reached.');
+  }
+
+  // Save post to local storage
+  async savePost() {
+    const post = this.currentPost;
+    if (!post) return;
+    
+    // Add timestamp and ID
+    const savedPost = {
+      ...post,
+      id: Date.now().toString(),
+      savedAt: Date.now()
+    };
+    
+    try {
+      const result = await chrome.storage.local.get(['savedPosts']);
+      const savedPosts = result.savedPosts || [];
+      
+      // Check if already saved (by URL)
+      if (savedPosts.some(p => p.url === post.url)) {
+        alert('Post already saved!');
+        return;
+      }
+      
+      savedPosts.unshift(savedPost);
+      await chrome.storage.local.set({ savedPosts });
+      
+      const saveBtn = document.querySelector('#saveBtn');
+      if (saveBtn) {
+        saveBtn.innerHTML = '<span class="analyze-icon">✅</span> Saved';
+        setTimeout(() => {
+          saveBtn.innerHTML = '<span class="analyze-icon">💾</span> Save';
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Error saving post:', error);
+      alert('Failed to save post.');
+    }
   }
 
   // Analyze Reddit post (translate + summarize comments)

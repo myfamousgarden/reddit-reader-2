@@ -213,6 +213,13 @@ function loadSettings() {
 
 // Setup event listeners
 function setupEventListeners() {
+  const openHomeButton = document.getElementById('openHome');
+  if (openHomeButton) {
+    openHomeButton.addEventListener('click', function() {
+      chrome.tabs.create({ url: 'home.html' });
+    });
+  }
+
   const saveButton = document.getElementById('saveSettings');
   const apiKeyInput = document.getElementById('apiKey');
   const aiProviderSelect = document.getElementById('aiProvider');

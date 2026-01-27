@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Reddit Reader - Home</title>
+  <link rel="stylesheet" href="home.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="logo">
+        <img src="icons/icon48.png" alt="Logo" width="32" height="32">
+        <span>Reddit Reader</span>
+      </div>
+      <nav class="nav-menu">
+        <a href="#" class="nav-item active" data-page="saved">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+          </svg>
+          Saved Posts
+        </a>
+        <a href="#" class="nav-item" data-page="settings">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+          Settings
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <header class="top-bar">
+        <h1>Saved Posts</h1>
+        <div class="search-box">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="searchInput" placeholder="Search saved posts...">
+        </div>
+      </header>
+
+      <div id="contentArea" class="content-area">
+        <!-- Post List will be injected here -->
+        <div id="postsList" class="posts-grid">
+          <!-- Template for a post card -->
+          <!-- 
+          <div class="post-card">
+            <div class="post-header">
+              <span class="subreddit">r/programming</span>
+              <span class="date">2 days ago</span>
+            </div>
+            <h3 class="post-title">Example Reddit Post Title</h3>
+            <p class="post-excerpt">This is a summary or excerpt of the post content...</p>
+            <div class="post-actions">
+              <button class="btn-text">View Original</button>
+              <button class="btn-text danger">Delete</button>
+            </div>
+          </div> 
+          -->
+        </div>
+        
+        <div id="emptyState" class="empty-state" style="display: none;">
+          <div class="empty-icon">📭</div>
+          <h3>No saved posts yet</h3>
+          <p>Posts you save will appear here.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="home.js"></script>
+</body>
+</html>
