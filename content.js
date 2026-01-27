@@ -81,7 +81,15 @@ class RedditReader2 {
     this.floatingPanel.innerHTML = `
       <div class="reddit-reader-2-panel-header">
         <h3>Reddit Reader</h3>
-        <button class="reddit-reader-2-close-btn" id="reddit-reader-2-close">×</button>
+        <div class="header-actions">
+          <button class="reddit-reader-2-icon-btn" id="reddit-reader-2-home" title="Go to Home">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+          </button>
+          <button class="reddit-reader-2-close-btn" id="reddit-reader-2-close">×</button>
+        </div>
       </div>
       <div class="reddit-reader-2-panel-content">
         <!-- Content will be populated by updatePanelContent() -->
@@ -166,6 +174,14 @@ class RedditReader2 {
     closeBtn.addEventListener('click', () => {
       this.hidePanel();
     });
+
+    // Home button
+    const homeBtn = this.floatingPanel.querySelector('#reddit-reader-2-home');
+    if (homeBtn) {
+      homeBtn.addEventListener('click', () => {
+        chrome.runtime.sendMessage({ action: 'openHome' });
+      });
+    }
 
     // Note: Panel will only close when user clicks the close button
     // No auto-hide when clicking outside

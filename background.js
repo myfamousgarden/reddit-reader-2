@@ -23,6 +23,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       .catch(error => sendResponse({ ok: false, error: error && error.message ? error.message : String(error) }));
     return true;
   }
+
+  if (request.action === 'openHome') {
+    chrome.tabs.create({ url: 'home.html' });
+    sendResponse({ ok: true });
+    return true;
+  }
 });
 
 function getBackendBaseUrl() {
