@@ -397,14 +397,16 @@ class RedditReader2 {
       contentDiv.innerHTML = `
         <div class="reddit-reader-2-post">
           <div class="reddit-reader-2-analyze-section">
-            <button class="reddit-reader-2-analyze-btn" id="analyzeBtn">
-              <span class="analyze-icon">🔍</span>
-              Analyze
-            </button>
-            <button class="reddit-reader-2-analyze-btn" id="saveBtn" style="margin-left: 10px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-              <span class="analyze-icon">💾</span>
-              Save
-            </button>
+            <div class="reddit-reader-2-actions">
+              <button class="reddit-reader-2-analyze-btn" id="analyzeBtn">
+                <span class="analyze-icon">🔍</span>
+                Analyze
+              </button>
+              <button class="reddit-reader-2-analyze-btn secondary" id="saveBtn">
+                <span class="analyze-icon">💾</span>
+                Save Thread
+              </button>
+            </div>
             <div class="reddit-reader-2-analysis-result" id="analysisResult" style="display: none;">
               <div class="reddit-reader-2-translation-result" id="translationResult">
                 <h5>Translation:</h5>
@@ -531,7 +533,7 @@ class RedditReader2 {
       if (saveBtn) {
         saveBtn.innerHTML = '<span class="analyze-icon">✅</span> Saved';
         setTimeout(() => {
-          saveBtn.innerHTML = '<span class="analyze-icon">💾</span> Save';
+          saveBtn.innerHTML = '<span class="analyze-icon">💾</span> Save Thread';
         }, 2000);
       }
     } catch (error) {
