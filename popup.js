@@ -113,6 +113,21 @@ function checkExtensionStatus() {
     if (!statusElement) return;
     statusElement.textContent = text;
     statusElement.className = isActive ? 'status active' : 'status';
+
+    if (text.includes('refresh')) {
+      statusElement.style.cursor = 'pointer';
+      statusElement.onclick = function() {
+        chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+          if (tabs && tabs[0]) {
+            chrome.tabs.reload(tabs[0].id);
+            window.close();
+          }
+        });
+      };
+    } else {
+      statusElement.style.cursor = 'default';
+      statusElement.onclick = null;
+    }
   }
 
   function isRedditUrl(url) {
