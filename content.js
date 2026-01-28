@@ -394,19 +394,49 @@ class RedditReader2 {
 
     // Image selector
     let imageUrl = "";
+    let galleryImages = [];
+    
     try {
-      // Try to find the post image
-      const imgElement = document.getElementById('post-image');
-      if (imgElement && imgElement.src) {
-        imageUrl = imgElement.src;
-      } else {
-        // Fallback to shreddit-post attribute
-        const shredditPost = document.querySelector('shreddit-post');
-        if (shredditPost && shredditPost.getAttribute('content-href')) {
-          const href = shredditPost.getAttribute('content-href');
-          // Check if it looks like an image
-          if (href.match(/\.(jpeg|jpg|gif|png|webp)$/i) || href.includes('i.redd.it') || href.includes('preview.redd.it')) {
-            imageUrl = href;
+      // Check for gallery first
+      const galleryCarousel = document.querySelector('gallery-carousel');
+      if (galleryCarousel) {
+        const galleryItems = galleryCarousel.querySelectorAll('li[slot^="page-"]');
+        galleryItems.forEach(item => {
+          // Try to find the best image source
+          const img = item.querySelector('img.media-lightbox-img') || item.querySelector('img');
+          if (img && img.src) {
+            // Remove query parameters to get clean URL if possible, or keep them if needed
+            // Reddit preview URLs often have parameters. Let's keep them for now to ensure access.
+            // But we might want to try to get the highest resolution.
+            // For now, just use the src as is.
+            galleryImages.push(img.src);
+          }
+        });
+        
+        // Remove duplicates
+        galleryImages = [...new Set(galleryImages)];
+        
+        if (galleryImages.length > 0) {
+          imageUrl = galleryImages[0]; // Use first image as main thumbnail
+          console.log("Found gallery images:", galleryImages);
+        }
+      }
+
+      // If no gallery images found, try single image methods
+      if (galleryImages.length === 0) {
+        // Try to find the post image
+        const imgElement = document.getElementById('post-image');
+        if (imgElement && imgElement.src) {
+          imageUrl = imgElement.src;
+        } else {
+          // Fallback to shreddit-post attribute
+          const shredditPost = document.querySelector('shreddit-post');
+          if (shredditPost && shredditPost.getAttribute('content-href')) {
+            const href = shredditPost.getAttribute('content-href');
+            // Check if it looks like an image
+            if (href.match(/\.(jpeg|jpg|gif|png|webp)$/i) || href.includes('i.redd.it') || href.includes('preview.redd.it')) {
+              imageUrl = href;
+            }
           }
         }
       }
@@ -421,7 +451,8 @@ class RedditReader2 {
     return {
       title: title.trim(),
       content: content.trim(),
-      imageUrl: imageUrl
+      imageUrl: imageUrl,
+      galleryImages: galleryImages
     };
   }
 
@@ -573,24 +604,46 @@ class RedditReader2 {
       const post = this.currentPost;
       if (!post) throw new Error('Could not extract post content');
 
-      // Download image if available
+      // Download images if available
       let imageBase64 = null;
-      if (post.imageUrl) {
-        if (saveBtn) {
-            saveBtn.innerHTML = '<span class="analyze-icon">⏳</span> Downloading image...';
-        }
+      let galleryImagesBase64 = [];
+
+      // Helper to download a single image
+      const downloadImage = async (url) => {
         try {
-            const response = await new Promise((resolve) => {
-                chrome.runtime.sendMessage({ action: 'fetchImage', url: post.imageUrl }, resolve);
-            });
-            if (response && response.ok && response.dataUrl) {
-                imageBase64 = response.dataUrl;
-            } else {
-                console.warn('Failed to download image:', response ? response.error : 'Unknown error');
-            }
+          const response = await new Promise((resolve) => {
+            chrome.runtime.sendMessage({ action: 'fetchImage', url: url }, resolve);
+          });
+          if (response && response.ok && response.dataUrl) {
+            return response.dataUrl;
+          }
+          console.warn('Failed to download image:', url, response ? response.error : 'Unknown error');
+          return null;
         } catch (e) {
-            console.warn('Error downloading image:', e);
+          console.warn('Error downloading image:', url, e);
+          return null;
         }
+      };
+
+      if (saveBtn) {
+        saveBtn.innerHTML = '<span class="analyze-icon">⏳</span> Downloading images...';
+      }
+
+      // Download gallery images if present
+      if (post.galleryImages && post.galleryImages.length > 0) {
+        // Limit to first 10 images to avoid excessive storage/time
+        const imagesToDownload = post.galleryImages.slice(0, 10);
+        const results = await Promise.all(imagesToDownload.map(url => downloadImage(url)));
+        galleryImagesBase64 = results.filter(img => img !== null);
+        
+        // Set the main imageBase64 to the first gallery image if available
+        if (galleryImagesBase64.length > 0) {
+          imageBase64 = galleryImagesBase64[0];
+        }
+      } 
+      // Fallback to single image if no gallery images successfully downloaded
+      else if (post.imageUrl) {
+        imageBase64 = await downloadImage(post.imageUrl);
       }
 
       // Extract comments
@@ -602,7 +655,8 @@ class RedditReader2 {
         id: Date.now().toString(),
         savedAt: Date.now(),
         commentsData: commentsData, // Save full comments structure
-        imageBase64: imageBase64 // Save image data
+        imageBase64: imageBase64, // Save main image data
+        galleryImagesBase64: galleryImagesBase64 // Save all gallery images
       };
       
       const result = await chrome.storage.local.get(['savedPosts']);

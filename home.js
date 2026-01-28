@@ -65,11 +65,51 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Render body content with markdown
     let bodyContent = '';
-    if (post.imageBase64) {
+    
+    // Check for gallery images first
+    if (post.galleryImagesBase64 && post.galleryImagesBase64.length > 0) {
+      const images = post.galleryImagesBase64;
+      let slidesHtml = '';
+      let dotsHtml = '';
+      
+      images.forEach((img, index) => {
+        slidesHtml += `
+          <div class="gallery-slide ${index === 0 ? 'active' : ''}" data-index="${index}">
+            <img src="${img}" alt="Gallery Image ${index + 1}">
+          </div>
+        `;
+        dotsHtml += `
+          <div class="gallery-dot ${index === 0 ? 'active' : ''}" data-index="${index}"></div>
+        `;
+      });
+      
+      bodyContent += `
+        <div class="modal-post-image gallery-wrapper">
+          <div class="gallery-container">
+            ${slidesHtml}
+            ${images.length > 1 ? `
+              <button class="gallery-nav gallery-prev">❮</button>
+              <button class="gallery-nav gallery-next">❯</button>
+              <div class="gallery-dots">
+                ${dotsHtml}
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    } 
+    // Fallback to single image
+    else if (post.imageBase64) {
       bodyContent += `<div class="modal-post-image"><img src="${post.imageBase64}" alt="Post Image"></div>`;
     }
+    
     bodyContent += markdownToHtml(post.content || '');
     document.getElementById('modalBody').innerHTML = bodyContent;
+    
+    // Initialize gallery if present
+    if (post.galleryImagesBase64 && post.galleryImagesBase64.length > 1) {
+      initGallery();
+    }
     
     const linkBtn = document.getElementById('modalLink');
     linkBtn.href = post.url;
@@ -79,6 +119,48 @@ document.addEventListener('DOMContentLoaded', () => {
     
     modal.classList.add('active');
     document.body.style.overflow = 'hidden'; // Prevent background scrolling
+  }
+
+  function initGallery() {
+    const container = document.querySelector('.gallery-container');
+    if (!container) return;
+    
+    const slides = container.querySelectorAll('.gallery-slide');
+    const dots = container.querySelectorAll('.gallery-dot');
+    const prevBtn = container.querySelector('.gallery-prev');
+    const nextBtn = container.querySelector('.gallery-next');
+    let currentIndex = 0;
+    
+    function showSlide(index) {
+      if (index < 0) index = slides.length - 1;
+      if (index >= slides.length) index = 0;
+      
+      currentIndex = index;
+      
+      slides.forEach(slide => slide.classList.remove('active'));
+      dots.forEach(dot => dot.classList.remove('active'));
+      
+      slides[currentIndex].classList.add('active');
+      dots[currentIndex].classList.add('active');
+    }
+    
+    prevBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showSlide(currentIndex - 1);
+    });
+    
+    nextBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showSlide(currentIndex + 1);
+    });
+    
+    dots.forEach(dot => {
+      dot.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const index = parseInt(dot.dataset.index);
+        showSlide(index);
+      });
+    });
   }
 
   function renderComments(commentsData) {
