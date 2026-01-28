@@ -71,6 +71,38 @@
       </div>
     </main>
   </div>
+
+  <!-- Thread Detail Modal -->
+  <div id="threadModal" class="modal">
+    <div class="modal-overlay"></div>
+    <div class="modal-container">
+      <div class="modal-header">
+        <h2 id="modalTitle"></h2>
+        <button class="btn-icon close-modal">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-content">
+        <div class="post-full-details">
+          <div class="post-meta-full">
+            <span id="modalSubreddit" class="subreddit-tag"></span>
+            <span id="modalDate" class="post-date"></span>
+          </div>
+          <div id="modalBody" class="post-body-content"></div>
+          <a id="modalLink" href="#" target="_blank" class="btn-text primary view-original-btn">View on Reddit</a>
+        </div>
+        
+        <div class="comments-section">
+          <h3 class="comments-header">Comments (<span id="commentCount">0</span>)</h3>
+          <div id="modalComments" class="comments-tree"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="home.js"></script>
 </body>
 </html>

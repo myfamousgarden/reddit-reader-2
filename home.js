@@ -3,6 +3,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const emptyState = document.getElementById('emptyState');
   const searchInput = document.getElementById('searchInput');
   const navItems = document.querySelectorAll('.nav-item');
+  const modal = document.getElementById('threadModal');
+  const modalCloseBtn = modal.querySelector('.close-modal');
+  const modalOverlay = modal.querySelector('.modal-overlay');
 
   let savedPosts = [];
 
@@ -41,13 +44,110 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Modal handlers
+  modalCloseBtn.addEventListener('click', closeModal);
+  modalOverlay.addEventListener('click', closeModal);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.classList.contains('active')) {
+      closeModal();
+    }
+  });
+
+  function closeModal() {
+    modal.classList.remove('active');
+    document.body.style.overflow = ''; // Restore scrolling
+  }
+
+  function openModal(post) {
+    document.getElementById('modalTitle').textContent = post.title;
+    document.getElementById('modalSubreddit').textContent = post.subreddit || 'r/reddit';
+    document.getElementById('modalDate').textContent = new Date(post.savedAt).toLocaleString();
+    
+    // Render body content with markdown
+    document.getElementById('modalBody').innerHTML = markdownToHtml(post.content || '');
+    
+    const linkBtn = document.getElementById('modalLink');
+    linkBtn.href = post.url;
+    
+    // Render comments
+    renderComments(post.commentsData);
+    
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+  }
+
+  function renderComments(commentsData) {
+    const commentsContainer = document.getElementById('modalComments');
+    const countSpan = document.getElementById('commentCount');
+    
+    commentsContainer.innerHTML = '';
+    
+    if (!commentsData || !commentsData.comments || commentsData.comments.length === 0) {
+      countSpan.textContent = '0';
+      commentsContainer.innerHTML = '<div class="empty-state" style="height: 100px;"><h3>No comments saved</h3></div>';
+      return;
+    }
+
+    countSpan.textContent = commentsData.totalComments || commentsData.comments.length;
+    const opUsername = commentsData.opUsername;
+
+    // Render comments as a tree
+    // Assuming comments are in DFS order (standard Reddit)
+    // We'll use a stack to manage nesting
+    
+    const rootContainer = document.createElement('div');
+    const stack = [{ element: rootContainer, depth: -1 }];
+    
+    commentsData.comments.forEach(comment => {
+      // Find parent
+      while (stack.length > 1 && stack[stack.length - 1].depth >= comment.depth) {
+        stack.pop();
+      }
+      
+      const parent = stack[stack.length - 1].element;
+      
+      const commentEl = document.createElement('div');
+      commentEl.className = `comment-item ${comment.isOP ? 'op-comment' : ''}`;
+      
+      const timeAgo = comment.time || 'unknown time';
+      
+      commentEl.innerHTML = `
+        <div class="comment-content-wrapper">
+          <div class="comment-header">
+            <span class="comment-author ${comment.isOP ? 'is-op' : ''}">${escapeHtml(comment.author)}</span>
+            <span class="comment-meta">${comment.score} points • ${timeAgo}</span>
+          </div>
+          <div class="comment-body">${markdownToHtml(comment.content)}</div>
+        </div>
+        <div class="comment-children"></div>
+      `;
+      
+      // If it's a top-level comment (depth 0), append to rootContainer (or parent if we want strict nesting)
+      // Since our stack starts with rootContainer at depth -1, depth 0 will be appended to it.
+      // But we need to handle the "comment-children" container for the next level.
+      
+      // Actually, we should append the commentEl to the parent's children container.
+      // If parent is rootContainer, we append directly.
+      // If parent is a comment, we append to its .comment-children.
+      
+      if (stack.length === 1) {
+        // Root
+        parent.appendChild(commentEl);
+      } else {
+        // Nested
+        parent.querySelector('.comment-children').appendChild(commentEl);
+      }
+      
+      // Push this comment to stack as potential parent
+      stack.push({ element: commentEl, depth: comment.depth });
+    });
+    
+    commentsContainer.appendChild(rootContainer);
+  }
+
   function loadPosts() {
     chrome.storage.local.get(['savedPosts'], (result) => {
       savedPosts = result.savedPosts || [];
-      
-      // If no posts, and we are in dev environment (or just for demo), 
-      // we might want to show something. 
-      // For now, let's just show empty state or render what we have.
       renderPosts(savedPosts);
     });
   }
@@ -84,11 +184,21 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
 
       // Event listeners
-      card.querySelector('.view-btn').addEventListener('click', () => {
+      
+      // Click on card to open modal (ignore clicks on actions)
+      card.addEventListener('click', (e) => {
+        // If click is on action buttons, don't open modal
+        if (e.target.closest('.post-actions')) return;
+        openModal(post);
+      });
+
+      card.querySelector('.view-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
         chrome.tabs.create({ url: post.url });
       });
 
-      card.querySelector('.delete-btn').addEventListener('click', () => {
+      card.querySelector('.delete-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
         deletePost(post.id);
       });
 
@@ -123,31 +233,63 @@ document.addEventListener('DOMContentLoaded', () => {
           id: '1',
           title: 'Understanding the Chrome Extension Architecture',
           subreddit: 'r/chrome_extensions',
-          content: 'Extensions are built on web technologies such as HTML, CSS, and JavaScript. They take advantage of some of the same web APIs as JavaScript on a web page, but an extension also has access to its own set of APIs...',
-          url: 'https://reddit.com',
-          savedAt: Date.now()
+          content: 'Extensions are built on web technologies such as HTML, CSS, and JavaScript.\n\n### Key Concepts\n\n1. **Manifest**: The blueprint.\n2. **Background Service Worker**: The event handler.\n3. **Content Scripts**: The bridge to web pages.\n\nThey take advantage of some of the same web APIs as JavaScript on a web page, but an extension also has access to its own set of APIs.',
+          url: 'https://reddit.com/r/chrome_extensions/1',
+          savedAt: Date.now(),
+          commentsData: {
+            opUsername: 'chrome_dev',
+            totalComments: 3,
+            comments: [
+              {
+                id: 'c1',
+                author: 'web_wizard',
+                content: 'This is a great explanation! How do content scripts communicate with the background script?',
+                score: 42,
+                depth: 0,
+                isOP: false,
+                time: '2 hours ago',
+                links: []
+              },
+              {
+                id: 'c2',
+                author: 'chrome_dev',
+                content: 'You can use `chrome.runtime.sendMessage` and `chrome.runtime.onMessage`. It is message passing.',
+                score: 25,
+                depth: 1,
+                isOP: true,
+                time: '1 hour ago',
+                links: []
+              },
+              {
+                id: 'c3',
+                author: 'newbie_coder',
+                content: 'Thanks for the info!',
+                score: 10,
+                depth: 2,
+                isOP: false,
+                time: '30 mins ago',
+                links: []
+              }
+            ]
+          }
         },
         {
           id: '2',
           title: 'Why Rust is becoming popular for web development',
           subreddit: 'r/rust',
           content: 'Rust’s performance, reliability, and productivity make it an excellent choice for web development. Frameworks like Actix and Rocket are gaining traction...',
-          url: 'https://reddit.com',
-          savedAt: Date.now() - 86400000
-        },
-        {
-          id: '3',
-          title: 'The state of AI in 2026',
-          subreddit: 'r/artificial',
-          content: 'We are seeing massive improvements in reasoning capabilities of LLMs. Agents are becoming more autonomous and capable of complex tasks...',
-          url: 'https://reddit.com',
-          savedAt: Date.now() - 172800000
+          url: 'https://reddit.com/r/rust/1',
+          savedAt: Date.now() - 86400000,
+          commentsData: {
+            opUsername: 'rustacean',
+            totalComments: 0,
+            comments: []
+          }
         }
       ];
       
       chrome.storage.local.set({ savedPosts: mockPosts }, () => {
         alert('Mock data added!');
-        // Don't auto reload, user can go back to Saved tab
       });
     });
 
@@ -165,5 +307,42 @@ document.addEventListener('DOMContentLoaded', () => {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  // Simple Markdown to HTML converter (subset)
+  function markdownToHtml(text) {
+    if (!text) return '';
+    
+    // Escape HTML first
+    let html = escapeHtml(text);
+    
+    // Headers
+    html = html.replace(/^### (.*$)/gm, '<h3>$1</h3>');
+    html = html.replace(/^## (.*$)/gm, '<h2>$1</h2>');
+    html = html.replace(/^# (.*$)/gm, '<h1>$1</h1>');
+    
+    // Bold
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/__(.*?)__/g, '<strong>$1</strong>');
+    
+    // Italic
+    html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    html = html.replace(/_(.*?)_/g, '<em>$1</em>');
+    
+    // Code blocks
+    html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+    html = html.replace(/`(.*?)`/g, '<code>$1</code>');
+    
+    // Lists
+    html = html.replace(/^\* (.*$)/gm, '<li>$1</li>');
+    html = html.replace(/^- (.*$)/gm, '<li>$1</li>');
+    
+    // Wrap consecutive list items (simple approach)
+    // For a robust implementation, we'd need a parser, but this helps for display
+    
+    // Line breaks
+    html = html.replace(/\n/g, '<br>');
+    
+    return html;
   }
 });
