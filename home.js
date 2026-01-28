@@ -64,7 +64,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('modalDate').textContent = new Date(post.savedAt).toLocaleString();
     
     // Render body content with markdown
-    document.getElementById('modalBody').innerHTML = markdownToHtml(post.content || '');
+    let bodyContent = '';
+    if (post.imageBase64) {
+      bodyContent += `<div class="modal-post-image"><img src="${post.imageBase64}" alt="Post Image"></div>`;
+    }
+    bodyContent += markdownToHtml(post.content || '');
+    document.getElementById('modalBody').innerHTML = bodyContent;
     
     const linkBtn = document.getElementById('modalLink');
     linkBtn.href = post.url;
@@ -170,12 +175,18 @@ document.addEventListener('DOMContentLoaded', () => {
       
       const date = new Date(post.savedAt).toLocaleDateString();
       
+      let imageHtml = '';
+      if (post.imageBase64) {
+        imageHtml = `<div class="post-thumbnail"><img src="${post.imageBase64}" alt="Post Image"></div>`;
+      }
+
       card.innerHTML = `
         <div class="post-header">
           <span class="subreddit">${escapeHtml(post.subreddit || 'r/reddit')}</span>
           <span class="date">${date}</span>
         </div>
         <h3 class="post-title" title="${escapeHtml(post.title)}">${escapeHtml(post.title)}</h3>
+        ${imageHtml}
         <p class="post-excerpt">${escapeHtml(post.content || '')}</p>
         <div class="post-actions">
           <button class="btn-text primary view-btn" data-url="${post.url}">View Original</button>

@@ -29,7 +29,33 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({ ok: true });
     return true;
   }
+
+  if (request.action === 'fetchImage') {
+    handleFetchImage(request.url)
+      .then(result => sendResponse(result))
+      .catch(error => sendResponse({ ok: false, error: error.message }));
+    return true;
+  }
 });
+
+async function handleFetchImage(url) {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
+    }
+    const blob = await response.blob();
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+    return { ok: true, dataUrl: base64 };
+  } catch (error) {
+    return { ok: false, error: error.message };
+  }
+}
 
 function getBackendBaseUrl() {
   const manifest = chrome.runtime.getManifest();

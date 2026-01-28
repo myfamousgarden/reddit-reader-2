@@ -392,9 +392,36 @@ class RedditReader2 {
       }
     }
 
+    // Image selector
+    let imageUrl = "";
+    try {
+      // Try to find the post image
+      const imgElement = document.getElementById('post-image');
+      if (imgElement && imgElement.src) {
+        imageUrl = imgElement.src;
+      } else {
+        // Fallback to shreddit-post attribute
+        const shredditPost = document.querySelector('shreddit-post');
+        if (shredditPost && shredditPost.getAttribute('content-href')) {
+          const href = shredditPost.getAttribute('content-href');
+          // Check if it looks like an image
+          if (href.match(/\.(jpeg|jpg|gif|png|webp)$/i) || href.includes('i.redd.it') || href.includes('preview.redd.it')) {
+            imageUrl = href;
+          }
+        }
+      }
+      
+      if (imageUrl) {
+        console.log("Found image URL:", imageUrl);
+      }
+    } catch (error) {
+      console.error("Error extracting image:", error);
+    }
+
     return {
       title: title.trim(),
-      content: content.trim()
+      content: content.trim(),
+      imageUrl: imageUrl
     };
   }
 
@@ -546,6 +573,26 @@ class RedditReader2 {
       const post = this.currentPost;
       if (!post) throw new Error('Could not extract post content');
 
+      // Download image if available
+      let imageBase64 = null;
+      if (post.imageUrl) {
+        if (saveBtn) {
+            saveBtn.innerHTML = '<span class="analyze-icon">⏳</span> Downloading image...';
+        }
+        try {
+            const response = await new Promise((resolve) => {
+                chrome.runtime.sendMessage({ action: 'fetchImage', url: post.imageUrl }, resolve);
+            });
+            if (response && response.ok && response.dataUrl) {
+                imageBase64 = response.dataUrl;
+            } else {
+                console.warn('Failed to download image:', response ? response.error : 'Unknown error');
+            }
+        } catch (e) {
+            console.warn('Error downloading image:', e);
+        }
+      }
+
       // Extract comments
       const commentsData = this.extractRedditComments();
       
@@ -554,7 +601,8 @@ class RedditReader2 {
         ...post,
         id: Date.now().toString(),
         savedAt: Date.now(),
-        commentsData: commentsData // Save full comments structure
+        commentsData: commentsData, // Save full comments structure
+        imageBase64: imageBase64 // Save image data
       };
       
       const result = await chrome.storage.local.get(['savedPosts']);

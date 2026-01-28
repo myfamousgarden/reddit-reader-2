@@ -6,14 +6,18 @@
   "backendBaseUrl": "https://reddit-reader.com",
   "permissions": [
     "activeTab",
-    "storage"
+    "storage",
+    "unlimitedStorage"
   ],
   "host_permissions": [
     "https://dashscope.aliyuncs.com/*",
     "https://open.bigmodel.cn/*",
     "https://api.openai.com/*",
     "https://api.deepseek.com/*",
-    "https://reddit-reader.com/*"
+    "https://reddit-reader.com/*",
+    "https://i.redd.it/*",
+    "https://preview.redd.it/*",
+    "https://external-preview.redd.it/*"
   ],
   "content_scripts": [
     {
