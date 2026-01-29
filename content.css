@@ -444,3 +444,17 @@
   color: var(--text-primary);
   text-decoration: underline;
 }
+
+/* Media Styles */
+.reddit-reader-2-media {
+  margin-bottom: 15px;
+  background: #000;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.reddit-reader-2-media video {
+  display: block;
+  width: 100%;
+  max-height: 300px;
+}

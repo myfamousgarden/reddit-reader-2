@@ -54,6 +54,14 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function closeModal() {
+    // Stop any playing video
+    const video = document.getElementById('modalVideo');
+    if (video) {
+      video.pause();
+      video.src = "";
+      video.load();
+    }
+    
     modal.classList.remove('active');
     document.body.style.overflow = ''; // Restore scrolling
   }
@@ -99,14 +107,17 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
     } 
     // Check for video
-    else if (post.videoBase64) {
+    else if (post.videoBase64 || post.videoUrl) {
+      const videoSrc = post.videoBase64 || post.videoUrl;
+      const isM3U8 = post.videoUrl && post.videoUrl.includes('.m3u8') && !post.videoBase64;
+      
       bodyContent += `
         <div class="modal-post-image video-wrapper" style="background: black; display: flex; justify-content: center; align-items: center; min-height: 300px;">
-          <video controls playsinline src="${post.videoBase64}" ${post.videoPoster ? `poster="${post.videoPoster}"` : ''} style="max-width: 100%; max-height: 80vh; width: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"></video>
+          <video id="modalVideo" controls="true" playsinline ${!isM3U8 ? `src="${videoSrc}"` : ''} ${post.videoPoster ? `poster="${post.videoPoster}"` : ''}></video>
         </div>
       `;
     }
-    // Fallback: If no videoBase64 but videoPoster exists (User reverted video download)
+    // Fallback: If no videoBase64/videoUrl but videoPoster exists
     else if (post.videoPoster) {
        bodyContent += `
         <div class="modal-post-image video-wrapper" style="background: black; display: flex; justify-content: center; align-items: center; min-height: 300px; position: relative;">
@@ -124,6 +135,20 @@ document.addEventListener('DOMContentLoaded', () => {
     
     bodyContent += markdownToHtml(post.content || '');
     document.getElementById('modalBody').innerHTML = bodyContent;
+
+    // Initialize HLS for video if needed
+    if (post.videoUrl && post.videoUrl.includes('.m3u8') && !post.videoBase64) {
+      const video = document.getElementById('modalVideo');
+      if (video && typeof Hls !== 'undefined') {
+        if (Hls.isSupported()) {
+          const hls = new Hls();
+          hls.loadSource(post.videoUrl);
+          hls.attachMedia(video);
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          video.src = post.videoUrl;
+        }
+      }
+    }
     
     // Initialize gallery if present
     if (post.galleryImagesBase64 && post.galleryImagesBase64.length > 1) {
