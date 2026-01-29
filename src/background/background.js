@@ -25,7 +25,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.action === 'openHome') {
-    chrome.tabs.create({ url: 'home.html' });
+    chrome.tabs.create({ url: 'src/ui/home/home.html' });
     sendResponse({ ok: true });
     return true;
   }

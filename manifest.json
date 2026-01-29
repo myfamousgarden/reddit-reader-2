@@ -23,23 +23,33 @@
   "content_scripts": [
     {
       "matches": ["*://reddit.com/*", "*://*.reddit.com/*"],
-      "js": ["ai-services.js", "content.js"],
-      "css": ["content.css"],
+      "js": [
+        "src/utils/stream-utils.js",
+        "src/services/ai/base-service.js",
+        "src/services/ai/providers.js",
+        "src/services/ai/backend-proxy.js",
+        "src/services/ai/factory.js",
+        "src/content/comment-processor.js",
+        "src/content/scraper.js",
+        "src/content/media-downloader.js",
+        "src/content/ui-manager.js"
+      ],
+      "css": ["src/content/content.css"],
       "run_at": "document_end"
     }
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "src/background/background.js"
   },
   "action": {
-    "default_popup": "popup.html",
+    "default_popup": "src/ui/popup/popup.html",
     "default_title": "Reddit Reader"
   },
   "web_accessible_resources": [
     {
       "resources": [
-        "auth-callback.html",
-        "auth-callback.js"
+        "src/ui/auth/auth-callback.html",
+        "src/ui/auth/auth-callback.js"
       ],
       "matches": [
         "https://reddit-reader.com/*"

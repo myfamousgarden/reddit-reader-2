@@ -29,7 +29,7 @@ function getExtensionId() {
 
 function getBackendCallbackUrl() {
   const id = getExtensionId();
-  return id ? `chrome-extension://${id}/auth-callback.html` : '';
+  return id ? `chrome-extension://${id}/src/ui/auth/auth-callback.html` : '';
 }
 
 function buildBackendLoginUrl() {
@@ -231,7 +231,7 @@ function setupEventListeners() {
   const openHomeButton = document.getElementById('openHome');
   if (openHomeButton) {
     openHomeButton.addEventListener('click', function() {
-      chrome.tabs.create({ url: 'home.html' });
+      chrome.tabs.create({ url: 'src/ui/home/home.html' });
     });
   }
 
