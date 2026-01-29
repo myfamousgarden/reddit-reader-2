@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Reddit Reader",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "AI-powered Reddit enhancement: translate posts, summarize comments with DashScope, GLM, OpenAI, or DeepSeek",
   "backendBaseUrl": "https://reddit-reader.com",
   "permissions": [
@@ -16,6 +16,7 @@
     "https://api.deepseek.com/*",
     "https://reddit-reader.com/*",
     "https://i.redd.it/*",
+    "https://v.redd.it/*",
     "https://preview.redd.it/*",
     "https://external-preview.redd.it/*"
   ],

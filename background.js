@@ -30,19 +30,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 
-  if (request.action === 'fetchImage') {
-    handleFetchImage(request.url)
+  if (request.action === 'fetchImage' || request.action === 'fetchMedia') {
+    handleFetchMedia(request.url)
       .then(result => sendResponse(result))
       .catch(error => sendResponse({ ok: false, error: error.message }));
     return true;
   }
 });
 
-async function handleFetchImage(url) {
+async function handleFetchMedia(url) {
   try {
     const response = await fetch(url);
     if (!response.ok) {
-      throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
+      throw new Error(`Failed to fetch media: ${response.status} ${response.statusText}`);
     }
     const blob = await response.blob();
     const base64 = await new Promise((resolve, reject) => {

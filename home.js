@@ -98,6 +98,25 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `;
     } 
+    // Check for video
+    else if (post.videoBase64) {
+      bodyContent += `
+        <div class="modal-post-image video-wrapper" style="background: black; display: flex; justify-content: center; align-items: center; min-height: 300px;">
+          <video controls playsinline src="${post.videoBase64}" ${post.videoPoster ? `poster="${post.videoPoster}"` : ''} style="max-width: 100%; max-height: 80vh; width: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"></video>
+        </div>
+      `;
+    }
+    // Fallback: If no videoBase64 but videoPoster exists (User reverted video download)
+    else if (post.videoPoster) {
+       bodyContent += `
+        <div class="modal-post-image video-wrapper" style="background: black; display: flex; justify-content: center; align-items: center; min-height: 300px; position: relative;">
+          <img src="${post.videoPoster}" style="max-width: 100%; max-height: 80vh; width: auto;" alt="Video Poster">
+          <div style="position: absolute; color: white; background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 20px; font-weight: bold;">
+             Video not saved (Poster Only)
+          </div>
+        </div>
+      `;
+    }
     // Fallback to single image
     else if (post.imageBase64) {
       bodyContent += `<div class="modal-post-image"><img src="${post.imageBase64}" alt="Post Image"></div>`;
@@ -258,7 +277,18 @@ document.addEventListener('DOMContentLoaded', () => {
       const date = new Date(post.savedAt).toLocaleDateString();
       
       let imageHtml = '';
-      if (post.imageBase64) {
+      if (post.videoBase64) {
+        imageHtml = `<div class="post-thumbnail video-thumbnail" style="position: relative;">
+          <video src="${post.videoBase64}" ${post.videoPoster ? `poster="${post.videoPoster}"` : ''} muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; background: rgba(0,0,0,0.6); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px;">▶</div>
+        </div>`;
+      } else if (post.videoPoster) {
+        // Show poster with play icon if video is not saved but poster is available
+        imageHtml = `<div class="post-thumbnail video-thumbnail" style="position: relative;">
+          <img src="${post.videoPoster}" alt="Video Thumbnail" style="width: 100%; height: 100%; object-fit: cover;">
+          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; background: rgba(0,0,0,0.6); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px;">▶</div>
+        </div>`;
+      } else if (post.imageBase64) {
         imageHtml = `<div class="post-thumbnail"><img src="${post.imageBase64}" alt="Post Image"></div>`;
       }
 

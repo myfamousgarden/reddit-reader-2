@@ -448,11 +448,41 @@ class RedditReader2 {
       console.error("Error extracting image:", error);
     }
 
+    // Video selector
+    let videoUrl = "";
+    let videoPoster = "";
+    try {
+      const player = document.querySelector('shreddit-player');
+      if (player) {
+        // Get poster
+        videoPoster = player.getAttribute('poster') || "";
+        
+        // Try to find the best video source
+        const preview = player.getAttribute('preview');
+        const src = player.getAttribute('src');
+        
+        // Use src (m3u8) as requested by user, falling back to preview if needed
+        if (src) {
+          videoUrl = src;
+        } else if (preview && preview.includes('.mp4')) {
+          videoUrl = preview;
+        }
+        
+        if (videoUrl) {
+          console.log("Found video URL:", videoUrl);
+        }
+      }
+    } catch (error) {
+      console.error("Error extracting video:", error);
+    }
+
     return {
       title: title.trim(),
       content: content.trim(),
       imageUrl: imageUrl,
-      galleryImages: galleryImages
+      galleryImages: galleryImages,
+      videoUrl: videoUrl,
+      videoPoster: videoPoster
     };
   }
 
@@ -578,6 +608,189 @@ class RedditReader2 {
     console.log('Finished loading comments or max retries reached.');
   }
 
+  // Helper to convert base64 data URL to Uint8Array
+  base64ToUint8Array(dataUrl) {
+    const base64 = dataUrl.split(',')[1];
+    const binaryString = atob(base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes;
+  }
+
+  // Helper to download HLS (m3u8) video
+  async downloadHLS(url) {
+    console.log('Downloading HLS stream:', url);
+    
+    // 1. Fetch m3u8 playlist
+    const response = await new Promise((resolve) => {
+      chrome.runtime.sendMessage({ action: 'fetchMedia', url: url }, resolve);
+    });
+    
+    if (!response || !response.ok || !response.dataUrl) {
+      throw new Error('Failed to fetch m3u8 playlist');
+    }
+
+    // Decode m3u8 content
+    const m3u8Bytes = this.base64ToUint8Array(response.dataUrl);
+    const m3u8Text = new TextDecoder().decode(m3u8Bytes);
+    
+    // Check if Master Playlist
+    if (m3u8Text.includes('#EXT-X-STREAM-INF')) {
+        console.log('Detected Master Playlist, finding best stream...');
+        // Parse streams
+        const lines = m3u8Text.split('\n');
+        let bestBandwidth = 0;
+        let bestUrl = null;
+        const baseUrl = url.substring(0, url.lastIndexOf('/') + 1);
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (line.startsWith('#EXT-X-STREAM-INF')) {
+                // Extract bandwidth
+                const bandwidthMatch = line.match(/BANDWIDTH=(\d+)/);
+                const bandwidth = bandwidthMatch ? parseInt(bandwidthMatch[1]) : 0;
+                
+                // Next line is the URL
+                let nextLine = lines[i+1]?.trim();
+                if (nextLine && !nextLine.startsWith('#')) {
+                    if (bandwidth > bestBandwidth) {
+                        bestBandwidth = bandwidth;
+                        bestUrl = nextLine.startsWith('http') ? nextLine : baseUrl + nextLine;
+                    }
+                }
+            }
+        }
+        
+        if (bestUrl) {
+            console.log('Redirecting to best stream:', bestUrl);
+            return this.downloadHLS(bestUrl); // Recursively download the media playlist
+        } else {
+            throw new Error('No valid stream found in Master Playlist');
+        }
+    }
+
+    // 2. Parse segments
+    const lines = m3u8Text.split('\n');
+    const segments = [];
+    const baseUrl = url.substring(0, url.lastIndexOf('/') + 1);
+    
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith('#')) {
+        // It's a segment URL
+        if (trimmed.startsWith('http')) {
+          segments.push(trimmed);
+        } else {
+          segments.push(baseUrl + trimmed);
+        }
+      }
+    }
+    
+    if (segments.length === 0) {
+      throw new Error('No segments found in m3u8 playlist');
+    }
+    
+    console.log(`Found ${segments.length} segments`);
+    
+    // 3. Download segments first to check format
+    const saveBtn = document.querySelector('#saveBtn');
+    const downloadedSegments = [];
+    
+    console.log(`Downloading ${segments.length} segments...`);
+    
+    for (let i = 0; i < segments.length; i++) {
+        if (saveBtn) {
+            saveBtn.innerHTML = `<span class="analyze-icon">⏳</span> Downloading video... ${Math.round((i / segments.length) * 100)}%`;
+        }
+        
+        const segmentUrl = segments[i];
+        const segResponse = await new Promise((resolve) => {
+          chrome.runtime.sendMessage({ action: 'fetchMedia', url: segmentUrl }, resolve);
+        });
+        
+        if (segResponse && segResponse.ok && segResponse.dataUrl) {
+          const bytes = this.base64ToUint8Array(segResponse.dataUrl);
+          downloadedSegments.push(bytes);
+        } else {
+            console.error(`Failed to download segment ${i}:`, segmentUrl);
+        }
+    }
+    
+    if (downloadedSegments.length === 0) {
+        throw new Error('No segments downloaded');
+    }
+
+    // 4. Check format and process
+    // Check if the first segment is an fMP4 (CMAF) or MPEG-TS
+    // fMP4 usually starts with ftyp box or is just ISOBMFF. 
+    // MPEG-TS packets start with 0x47.
+    
+    const firstByte = downloadedSegments[0][0];
+    let isMpegTs = (firstByte === 0x47);
+    
+    console.log(`First byte: 0x${firstByte.toString(16)}, detected as ${isMpegTs ? 'MPEG-TS' : 'fMP4/Other'}`);
+    
+    if (isMpegTs) {
+        // Use mux.js for MPEG-TS
+        if (typeof muxjs === 'undefined') {
+          throw new Error('mux.js library not found');
+        }
+        
+        console.log('Using mux.js for Transmuxing...');
+        const transmuxer = new muxjs.mp4.Transmuxer();
+        const initSegments = [];
+        const mediaSegments = [];
+        
+        transmuxer.on('data', (segment) => {
+          if (segment.initSegment) {
+            initSegments.push(segment.initSegment);
+          }
+          mediaSegments.push(segment.data);
+        });
+        
+        for (const segment of downloadedSegments) {
+            transmuxer.push(segment);
+            transmuxer.flush();
+        }
+        
+        let finalParts = [];
+        if (initSegments.length > 0) {
+            finalParts.push(initSegments[0]);
+        }
+        finalParts = finalParts.concat(mediaSegments);
+        
+        const blob = new Blob(finalParts, { type: 'video/mp4' });
+        console.log('Transmuxed MP4 Blob size:', blob.size);
+        
+        if (blob.size < 1000) {
+             throw new Error('Transmuxing failed, output too small');
+        }
+        
+        return await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+        
+    } else {
+        // Assume fMP4/CMAF, just concatenate
+        console.log('Concatenating fMP4 segments directly...');
+        const blob = new Blob(downloadedSegments, { type: 'video/mp4' });
+        console.log('Concatenated Blob size:', blob.size);
+        
+        return await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+    }
+  }
+
   // Save post to local storage
   async savePost() {
     const saveBtn = document.querySelector('#saveBtn');
@@ -608,32 +821,37 @@ class RedditReader2 {
       let imageBase64 = null;
       let galleryImagesBase64 = [];
 
-      // Helper to download a single image
-      const downloadImage = async (url) => {
+      // Helper to download a single media file (image or video)
+      const downloadMedia = async (url) => {
         try {
+          // Check for m3u8
+          if (url.includes('.m3u8')) {
+            return await this.downloadHLS(url);
+          }
+          
           const response = await new Promise((resolve) => {
-            chrome.runtime.sendMessage({ action: 'fetchImage', url: url }, resolve);
+            chrome.runtime.sendMessage({ action: 'fetchMedia', url: url }, resolve);
           });
           if (response && response.ok && response.dataUrl) {
             return response.dataUrl;
           }
-          console.warn('Failed to download image:', url, response ? response.error : 'Unknown error');
+          console.warn('Failed to download media:', url, response ? response.error : 'Unknown error');
           return null;
         } catch (e) {
-          console.warn('Error downloading image:', url, e);
+          console.warn('Error downloading media:', url, e);
           return null;
         }
       };
 
       if (saveBtn) {
-        saveBtn.innerHTML = '<span class="analyze-icon">⏳</span> Downloading images...';
+        saveBtn.innerHTML = '<span class="analyze-icon">⏳</span> Downloading media...';
       }
 
       // Download gallery images if present
       if (post.galleryImages && post.galleryImages.length > 0) {
         // Limit to first 10 images to avoid excessive storage/time
         const imagesToDownload = post.galleryImages.slice(0, 10);
-        const results = await Promise.all(imagesToDownload.map(url => downloadImage(url)));
+        const results = await Promise.all(imagesToDownload.map(url => downloadMedia(url)));
         galleryImagesBase64 = results.filter(img => img !== null);
         
         // Set the main imageBase64 to the first gallery image if available
@@ -643,7 +861,26 @@ class RedditReader2 {
       } 
       // Fallback to single image if no gallery images successfully downloaded
       else if (post.imageUrl) {
-        imageBase64 = await downloadImage(post.imageUrl);
+        imageBase64 = await downloadMedia(post.imageUrl);
+      }
+
+      // Download video if available
+      let videoBase64 = null;
+      let videoPosterBase64 = null;
+
+      if (post.videoUrl) {
+        // if (saveBtn) {
+        //   saveBtn.innerHTML = '<span class="analyze-icon">⏳</span> Downloading video...';
+        // }
+        // videoBase64 = await downloadMedia(post.videoUrl);
+        
+        // Try to download poster as well for offline view
+        if (post.videoPoster && post.videoPoster.startsWith('http')) {
+             if (saveBtn) {
+                saveBtn.innerHTML = '<span class="analyze-icon">⏳</span> Downloading poster...';
+             }
+             videoPosterBase64 = await downloadMedia(post.videoPoster);
+        }
       }
 
       // Extract comments
@@ -656,7 +893,9 @@ class RedditReader2 {
         savedAt: Date.now(),
         commentsData: commentsData, // Save full comments structure
         imageBase64: imageBase64, // Save main image data
-        galleryImagesBase64: galleryImagesBase64 // Save all gallery images
+        galleryImagesBase64: galleryImagesBase64, // Save all gallery images
+        videoBase64: videoBase64, // Save video data
+        videoPoster: videoPosterBase64 || post.videoPoster // Save poster base64 if available, else URL
       };
       
       const result = await chrome.storage.local.get(['savedPosts']);
