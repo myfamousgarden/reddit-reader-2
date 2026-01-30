@@ -412,85 +412,19 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderSettings() {
     postsList.innerHTML = `
       <div style="padding: 20px; background: white; border-radius: 12px; box-shadow: var(--card-shadow);">
-        <h3>Debug Tools</h3>
-        <p>Use these tools to populate data for testing.</p>
-        <button id="addMockData" class="btn-text primary" style="background: #eef6fc; padding: 10px 20px;">Add Mock Data</button>
-        <button id="clearAll" class="btn-text danger" style="background: #fff1f0; padding: 10px 20px; margin-left: 10px;">Clear All Data</button>
+        <h3>Data</h3>
+        <p>Manage your saved data.</p>
+        <button id="clearAll" class="btn-text danger" style="background: #fff1f0; padding: 10px 20px;">Clear All Data</button>
       </div>
     `;
     postsList.style.display = 'block';
     emptyState.style.display = 'none';
 
-    document.getElementById('addMockData').addEventListener('click', () => {
-      const mockPosts = [
-        {
-          id: '1',
-          title: 'Understanding the Chrome Extension Architecture',
-          subreddit: 'r/chrome_extensions',
-          content: 'Extensions are built on web technologies such as HTML, CSS, and JavaScript.\n\n### Key Concepts\n\n1. **Manifest**: The blueprint.\n2. **Background Service Worker**: The event handler.\n3. **Content Scripts**: The bridge to web pages.\n\nThey take advantage of some of the same web APIs as JavaScript on a web page, but an extension also has access to its own set of APIs.',
-          url: 'https://reddit.com/r/chrome_extensions/1',
-          savedAt: Date.now(),
-          commentsData: {
-            opUsername: 'chrome_dev',
-            totalComments: 3,
-            comments: [
-              {
-                id: 'c1',
-                author: 'web_wizard',
-                content: 'This is a great explanation! How do content scripts communicate with the background script?',
-                score: 42,
-                depth: 0,
-                isOP: false,
-                time: '2 hours ago',
-                links: []
-              },
-              {
-                id: 'c2',
-                author: 'chrome_dev',
-                content: 'You can use `chrome.runtime.sendMessage` and `chrome.runtime.onMessage`. It is message passing.',
-                score: 25,
-                depth: 1,
-                isOP: true,
-                time: '1 hour ago',
-                links: []
-              },
-              {
-                id: 'c3',
-                author: 'newbie_coder',
-                content: 'Thanks for the info!',
-                score: 10,
-                depth: 2,
-                isOP: false,
-                time: '30 mins ago',
-                links: []
-              }
-            ]
-          }
-        },
-        {
-          id: '2',
-          title: 'Why Rust is becoming popular for web development',
-          subreddit: 'r/rust',
-          content: 'Rust’s performance, reliability, and productivity make it an excellent choice for web development. Frameworks like Actix and Rocket are gaining traction...',
-          url: 'https://reddit.com/r/rust/1',
-          savedAt: Date.now() - 86400000,
-          commentsData: {
-            opUsername: 'rustacean',
-            totalComments: 0,
-            comments: []
-          }
-        }
-      ];
-      
-      chrome.storage.local.set({ savedPosts: mockPosts }, () => {
-        alert('Mock data added!');
-      });
-    });
-
     document.getElementById('clearAll').addEventListener('click', () => {
       if(confirm('Clear all saved posts?')) {
         chrome.storage.local.set({ savedPosts: [] }, () => {
           alert('All data cleared!');
+          // Refresh if we are still on the settings page or just to update state
         });
       }
     });

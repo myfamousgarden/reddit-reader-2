@@ -54,6 +54,14 @@
       "matches": [
         "https://reddit-reader.com/*"
       ]
+    },
+    {
+      "resources": [
+        "icons/*.png"
+      ],
+      "matches": [
+        "*://*.reddit.com/*"
+      ]
     }
   ],
   "icons": {
