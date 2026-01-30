@@ -337,6 +337,15 @@ body {
   color: var(--text-primary);
 }
 
+.btn-icon.danger {
+  color: var(--danger-color);
+}
+
+.btn-icon.danger:hover {
+  background-color: #fef2f2;
+  color: var(--danger-color);
+}
+
 .modal-content {
   flex: 1;
   overflow-y: auto;

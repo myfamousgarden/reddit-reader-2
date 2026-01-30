@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
       item.classList.add('active');
 
       if (page === 'saved') {
-        document.querySelector('.top-bar h1').textContent = 'Saved Posts';
+        document.querySelector('.top-bar h1').textContent = 'Saved Threads';
         document.querySelector('.search-box').style.display = 'block';
         loadPosts(); // Reload to be safe
       } else if (page === 'settings') {
@@ -157,6 +157,27 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const linkBtn = document.getElementById('modalLink');
     linkBtn.href = post.url;
+
+    // Download CSV button handler
+    const downloadCsvBtn = document.getElementById('modalDownloadCsvBtn');
+    // Remove existing event listeners by cloning
+    const newDownloadCsvBtn = downloadCsvBtn.cloneNode(true);
+    downloadCsvBtn.parentNode.replaceChild(newDownloadCsvBtn, downloadCsvBtn);
+    
+    newDownloadCsvBtn.addEventListener('click', () => {
+      downloadCommentsAsCsv(post);
+    });
+
+    // Delete button handler
+    const deleteBtn = document.getElementById('modalDeleteBtn');
+    // Remove existing event listeners by cloning
+    const newDeleteBtn = deleteBtn.cloneNode(true);
+    deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
+    
+    newDeleteBtn.addEventListener('click', () => {
+      deletePost(post.id);
+      closeModal();
+    });
     
     // Render comments
     renderComments(post.commentsData);
@@ -326,8 +347,28 @@ document.addEventListener('DOMContentLoaded', () => {
         ${imageHtml}
         <p class="post-excerpt">${escapeHtml(post.content || '')}</p>
         <div class="post-actions">
-          <button class="btn-text primary view-btn" data-url="${post.url}">View Original</button>
-          <button class="btn-text danger delete-btn" data-id="${post.id}">Delete</button>
+          <button class="btn-icon view-btn" data-url="${post.url}" title="View Original">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+          </button>
+          <button class="btn-icon download-btn" title="Download Comments as CSV">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+          </button>
+          <button class="btn-icon danger delete-btn" data-id="${post.id}" title="Delete">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              <line x1="10" y1="11" x2="10" y2="17"></line>
+              <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+          </button>
         </div>
       `;
 
@@ -343,6 +384,11 @@ document.addEventListener('DOMContentLoaded', () => {
       card.querySelector('.view-btn').addEventListener('click', (e) => {
         e.stopPropagation();
         chrome.tabs.create({ url: post.url });
+      });
+
+      card.querySelector('.download-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        downloadCommentsAsCsv(post);
       });
 
       card.querySelector('.delete-btn').addEventListener('click', (e) => {
@@ -448,6 +494,56 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       }
     });
+  }
+
+  function downloadCommentsAsCsv(post) {
+    if (!post.commentsData || !post.commentsData.comments || post.commentsData.comments.length === 0) {
+      alert('No comments to download.');
+      return;
+    }
+
+    const comments = post.commentsData.comments;
+    // CSV Header matching Sidebar implementation
+    const headers = ['Author', 'Time', 'Score', 'Thread Level', 'Is Reply', 'Comment', 'Permalink', 'Links'];
+    let csvContent = headers.join(',') + "\n";
+
+    // Helper for CSV escaping
+    const escapeCSV = (str) => {
+      if (str === null || str === undefined) return '';
+      const stringValue = String(str);
+      if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+        return `"${stringValue.replace(/"/g, '""')}"`;
+      }
+      return stringValue;
+    };
+
+    comments.forEach(comment => {
+      const row = [
+        escapeCSV(comment.author),
+        escapeCSV(comment.time),
+        comment.score || 0,
+        comment.depth || 0,
+        (comment.depth > 0) ? 'Yes' : 'No',
+        escapeCSV(comment.content),
+        escapeCSV(comment.permalink ? 'https://www.reddit.com' + comment.permalink : ''),
+        escapeCSV(comment.links ? comment.links.join('; ') : '')
+      ].join(",");
+      
+      csvContent += row + "\n";
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    // Sanitize filename
+    const safeTitle = (post.title || 'comments').replace(/[^a-z0-9]/gi, '_').toLowerCase().substring(0, 50);
+    const filename = `${safeTitle}_comments.csv`;
+    link.setAttribute("download", filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   function escapeHtml(text) {
