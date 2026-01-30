@@ -106,12 +106,22 @@ class CommentProcessor {
       const links = [];
       
       if (contentElement) {
+        // Clone the element to avoid modifying the actual DOM and to filter out ads
+        const clonedContent = contentElement.cloneNode(true);
+        
+        // Remove ad elements specified by user requirements
+        const adTags = ['shreddit-dynamic-ad-link', 'shreddit-comment-tree-ad'];
+        adTags.forEach(tagName => {
+          const adElements = clonedContent.querySelectorAll(tagName);
+          adElements.forEach(el => el.remove());
+        });
+
         // Get text content, removing any tracking elements
-        const textElements = contentElement.querySelectorAll('p');
+        const textElements = clonedContent.querySelectorAll('p');
         content = Array.from(textElements).map(p => p.textContent.trim()).join('\n').trim();
         
-        // Get links
-        const linkElements = contentElement.querySelectorAll('a');
+        // Get links from cleaned content
+        const linkElements = clonedContent.querySelectorAll('a');
         linkElements.forEach(a => {
             if (a.href) links.push(a.href);
         });
