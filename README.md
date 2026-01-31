@@ -1,6 +1,6 @@
 # Reddit Reader
 
-A Chrome extension that provides an enhanced Reddit reading experience with a floating panel interface.
+Reddit Reader translates Reddit posts, summarizes key discussion points, saves threads for later reading, and lets you export full threads so you can understand content faster and browse more efficiently. You can use your own API key with supported providers, or choose the reddit-reader.com service that works without an API key.
 
 [Watch the introduction video](https://www.youtube.com/watch?v=ctJK3s_vvuA)
 
@@ -10,6 +10,7 @@ A Chrome extension that provides an enhanced Reddit reading experience with a fl
 - **Full-Height Side Panel**: Occupies entire browser window height for maximum content viewing
 - **Reddit Content Display**: Automatically extracts and displays Reddit post titles and content
 - **AI Translation**: Clean translation interface - translate Reddit posts to Chinese with streaming support using modular AI service architecture
+- **Save Threads**: Save interesting threads to read later or reference anytime
 - **Extensible AI Services**: Modular design supports multiple AI providers (currently DashScope, easily extensible to OpenAI, etc.)
 - **Smart Page Detection**: Recognizes Reddit post pages and updates content accordingly
 - **Auto-Refresh**: Content updates automatically when navigating between pages
@@ -32,10 +33,14 @@ The extension uses a modular AI service architecture that makes it easy to integ
 - **Extensible Design**: Easy to add new AI providers (OpenAI, Google, etc.)
 
 ### File Structure
-- `content.js`: Main extension logic and UI
-- `ai-services.js`: AI service architecture and implementations
-- `content.css`: Styling for the floating panel
+- `src/`: Source code directory
+  - `background/`: Background service worker
+  - `content/`: Content scripts (Scraper, UI, Comment Processor)
+  - `services/`: AI service architecture and implementations
+  - `ui/`: UI pages and scripts (Home, Popup, Auth)
 - `manifest.json`: Extension configuration
+- `icons/`: Extension icons
+- `README.md`: This file
 
 ## Installation
 
@@ -73,14 +78,15 @@ The extension uses a modular AI service architecture that makes it easy to integ
 
 ```
 reddit_reader_2/
-├── manifest.json          # Extension configuration
-├── content.js             # Main functionality script
-├── content.css            # Styling for floating elements
-├── popup.html             # Extension popup interface
-├── popup.js               # Popup functionality
-├── icons/                 # Extension icons
-│   └── icon.svg          # SVG icon file
-└── README.md              # This file
+├── manifest.json            # Extension configuration
+├── src/
+│   ├── background/          # Background service worker
+│   ├── content/             # Content scripts
+│   ├── services/            # AI services
+│   ├── ui/                  # UI components
+│   └── utils/               # Utilities
+├── icons/                   # Extension icons
+└── README.md                # This file
 ```
 
 ## Development
