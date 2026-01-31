@@ -110,7 +110,7 @@ class CommentProcessor {
         const clonedContent = contentElement.cloneNode(true);
         
         // Remove ad elements specified by user requirements
-        const adTags = ['shreddit-dynamic-ad-link', 'shreddit-comment-tree-ad'];
+        const adTags = ['shreddit-dynamic-ad-link', 'shreddit-comment-tree-ad', 'ad-format-content'];
         adTags.forEach(tagName => {
           const adElements = clonedContent.querySelectorAll(tagName);
           adElements.forEach(el => el.remove());
