@@ -4,12 +4,58 @@ class SavedThreads {
     this.emptyState = elements.emptyState;
     this.modal = elements.modal;
     this.savedPosts = [];
+    this.currentView = 'card'; // 'card' or 'list'
     
     // Bind methods
     this.renderPosts = this.renderPosts.bind(this);
     this.deletePost = this.deletePost.bind(this);
     this.downloadCommentsAsCsv = this.downloadCommentsAsCsv.bind(this);
     this.openModal = this.openModal.bind(this);
+    this.setView = this.setView.bind(this);
+
+    // Initialize view toggle buttons
+    const cardViewBtn = document.getElementById('cardViewBtn');
+    const listViewBtn = document.getElementById('listViewBtn');
+
+    if (cardViewBtn && listViewBtn) {
+      cardViewBtn.addEventListener('click', () => this.setView('card'));
+      listViewBtn.addEventListener('click', () => this.setView('list'));
+    }
+
+    // Load persisted view preference
+    chrome.storage.local.get(['savedThreadsView'], (result) => {
+      if (result.savedThreadsView) {
+        this.setView(result.savedThreadsView);
+      }
+    });
+  }
+
+  setView(view) {
+    this.currentView = view;
+    
+    // Update buttons state
+    const cardViewBtn = document.getElementById('cardViewBtn');
+    const listViewBtn = document.getElementById('listViewBtn');
+    
+    if (cardViewBtn && listViewBtn) {
+      if (view === 'card') {
+        cardViewBtn.classList.add('active');
+        listViewBtn.classList.remove('active');
+      } else {
+        cardViewBtn.classList.remove('active');
+        listViewBtn.classList.add('active');
+      }
+    }
+
+    // Update grid class
+    if (view === 'list') {
+      this.postsList.classList.add('list-view');
+    } else {
+      this.postsList.classList.remove('list-view');
+    }
+
+    // Persist preference
+    chrome.storage.local.set({ savedThreadsView: view });
   }
 
   loadPosts() {
@@ -37,7 +83,7 @@ class SavedThreads {
       return;
     }
 
-    this.postsList.style.display = 'grid';
+    this.postsList.style.removeProperty('display');
     this.emptyState.style.display = 'none';
 
     posts.forEach(post => {
@@ -59,39 +105,52 @@ class SavedThreads {
         </div>`;
       } else if (post.imageBase64) {
         imageHtml = `<div class="post-thumbnail"><img src="${post.imageBase64}" alt="Post Image"></div>`;
+      } else {
+        // Placeholder for consistent card size
+        imageHtml = `<div class="post-thumbnail no-image">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.2;">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+        </div>`;
       }
 
       card.innerHTML = `
-        <div class="post-header">
-          <span class="subreddit">${this.escapeHtml(post.subreddit || 'r/reddit')}</span>
-          <span class="date">${date}</span>
-        </div>
-        <h3 class="post-title" title="${this.escapeHtml(post.title)}">${this.escapeHtml(post.title)}</h3>
         ${imageHtml}
-        <p class="post-excerpt">${this.escapeHtml(post.content || '')}</p>
-        <div class="post-actions">
-          <button class="btn-icon view-btn" data-url="${post.url}" title="View Original">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-              <polyline points="15 3 21 3 21 9"></polyline>
-              <line x1="10" y1="14" x2="21" y2="3"></line>
-            </svg>
-          </button>
-          <button class="btn-icon download-btn" title="Download Comments as CSV">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-          </button>
-          <button class="btn-icon danger delete-btn" data-id="${post.id}" title="Delete">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="3 6 5 6 21 6"></polyline>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-              <line x1="10" y1="11" x2="10" y2="17"></line>
-              <line x1="14" y1="11" x2="14" y2="17"></line>
-            </svg>
-          </button>
+        <div class="post-content-wrapper">
+          <div class="post-header">
+            <span class="subreddit">${this.escapeHtml(post.subreddit || 'r/reddit')}</span>
+            <span class="date">${date}</span>
+          </div>
+          <h3 class="post-title" title="${this.escapeHtml(post.title)}">${this.escapeHtml(post.title)}</h3>
+          <p class="post-excerpt">${this.escapeHtml(post.content || '')}</p>
+          <div class="post-actions">
+            <button class="btn-icon view-btn" data-url="${post.url}" title="View Original">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <line x1="10" y1="14" x2="21" y2="3"></line>
+              </svg>
+            </button>
+            <button class="btn-icon download-btn" title="Download Comments as CSV">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+            </button>
+            <button class="btn-icon danger delete-btn" data-id="${post.id}" title="Delete">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                <line x1="10" y1="11" x2="10" y2="17"></line>
+                <line x1="14" y1="11" x2="14" y2="17"></line>
+              </svg>
+            </button>
+          </div>
         </div>
       `;
 
