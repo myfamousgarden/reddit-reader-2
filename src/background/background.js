@@ -16,7 +16,90 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Return true to indicate we will send a response asynchronously
     return true;
   }
+
+  if (request.action === 'backendAuthStatus') {
+    handleBackendAuthStatus(request)
+      .then(result => sendResponse(result))
+      .catch(error => sendResponse({ ok: false, error: error && error.message ? error.message : String(error) }));
+    return true;
+  }
+
+  if (request.action === 'openHome') {
+    chrome.tabs.create({ url: 'src/ui/home/home.html' });
+    sendResponse({ ok: true });
+    return true;
+  }
+
+  if (request.action === 'fetchImage' || request.action === 'fetchMedia') {
+    handleFetchMedia(request.url)
+      .then(result => sendResponse(result))
+      .catch(error => sendResponse({ ok: false, error: error.message }));
+    return true;
+  }
 });
+
+async function handleFetchMedia(url) {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch media: ${response.status} ${response.statusText}`);
+    }
+    const blob = await response.blob();
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+    return { ok: true, dataUrl: base64 };
+  } catch (error) {
+    return { ok: false, error: error.message };
+  }
+}
+
+function getBackendBaseUrl() {
+  const manifest = chrome.runtime.getManifest();
+  return manifest && manifest.backendBaseUrl ? manifest.backendBaseUrl : '';
+}
+
+async function handleBackendAuthStatus(request) {
+  const backendBaseUrl = request.backendBaseUrl || getBackendBaseUrl();
+  const token = request.token || '';
+
+  if (!token) {
+    return { ok: true, loggedIn: false, reason: 'missing_token' };
+  }
+
+  const url = `${backendBaseUrl.replace(/\/$/, '')}/api/auth/status`;
+  let response;
+  try {
+    response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  } catch (e) {
+    return { ok: false, loggedIn: false, reason: 'unreachable' };
+  }
+
+  if (response.status === 401) {
+    return { ok: true, loggedIn: false };
+  }
+
+  if (!response.ok) {
+    return { ok: false, loggedIn: false, reason: `http_${response.status}` };
+  }
+
+  let data = null;
+  try {
+    data = await response.json();
+  } catch (e) {
+    data = null;
+  }
+
+  return { ok: true, loggedIn: true, data: data };
+}
 
 async function handleAIStreamRequest(request, tabId) {
   const { provider, apiKey, url, headers, body, streamId } = request;

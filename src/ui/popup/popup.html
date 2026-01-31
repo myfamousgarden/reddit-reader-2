@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reddit Reader</title>
+  <style>
+    :root {
+      --bg-color: #ffffff;
+      --card-bg: #ffffff;
+      --border-color: #e4e4e7;
+      --text-primary: #09090b;
+      --text-secondary: #71717a;
+      --primary-color: #18181b;
+      --primary-fg: #fafafa;
+      --input-bg: #ffffff;
+      --hover-bg: #f4f4f5;
+    }
+
+    body {
+      width: 320px;
+      padding: 24px;
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+    }
+    
+    .header {
+      margin-bottom: 24px;
+    }
+    
+    .header h1 {
+      margin: 0 0 4px 0;
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+    }
+    
+    .header p {
+      margin: 0;
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+    
+    .info {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+    
+    .info h3 {
+      margin: 0 0 16px 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .info-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 0 0 16px 0;
+    }
+
+    .info-header h3 {
+      margin: 0;
+    }
+
+    .help-tooltip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--border-color);
+      color: var(--text-secondary);
+      font-size: 11px;
+      cursor: help;
+      position: relative;
+    }
+    
+    .tooltip-content {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      width: 240px;
+      padding: 12px;
+      border-radius: 8px;
+      background: #ffffff;
+      border: 1px solid #e4e4e7;
+      color: #09090b;
+      font-size: 12px;
+      line-height: 1.5;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      opacity: 0;
+      transform: translateY(-4px);
+      pointer-events: none;
+      transition: all 0.2s ease;
+      z-index: 100;
+    }
+
+    .help-tooltip:hover .tooltip-content,
+    .help-tooltip:focus .tooltip-content,
+    .help-tooltip:focus-within .tooltip-content {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .tooltip-content h4 {
+      margin: 0 0 8px 0;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .tooltip-content ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--text-secondary);
+    }
+
+    .tooltip-content li {
+      margin-bottom: 4px;
+    }
+
+    .settings-row {
+      margin-bottom: 16px;
+    }
+
+    .settings-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .settings-row label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .settings-select, input[type="text"], input[type="password"] {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 13px;
+      background: var(--input-bg);
+      color: var(--text-primary);
+      box-sizing: border-box;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .settings-select:focus, input:focus {
+      border-color: var(--text-secondary);
+      box-shadow: 0 0 0 2px rgba(24, 24, 27, 0.05);
+    }
+
+    .mode-group {
+      display: flex;
+      background: var(--hover-bg);
+      padding: 2px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+
+    .mode-option {
+      flex: 1;
+      position: relative;
+    }
+
+    .mode-option input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .mode-option span {
+      display: block;
+      padding: 6px;
+      font-size: 12px;
+      text-align: center;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: all 0.2s;
+    }
+
+    .mode-option input:checked + span {
+      background: #ffffff;
+      color: var(--text-primary);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    
+    .settings-note {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+
+    .backend-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .backend-url {
+      font-size: 12px;
+      color: var(--text-secondary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 180px;
+    }
+
+    .backend-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+
+    .backend-login-btn {
+      padding: 4px 8px;
+      background: var(--hover-bg);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+    }
+
+    .backend-login-status {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    button#saveSettings {
+      width: 100%;
+      padding: 10px;
+      background: var(--primary-color);
+      color: var(--primary-fg);
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: opacity 0.2s;
+    }
+
+    button#saveSettings:hover {
+      opacity: 0.9;
+    }
+
+    .status {
+      text-align: center;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      background: #f0fdf4;
+      color: #15803d;
+      border: 1px solid #bbf7d0;
+    }
+    
+    .status.active {
+      background: #f0fdf4;
+      color: #15803d;
+      border-color: #bbf7d0;
+    }
+
+    button#openHome {
+      width: 100%;
+      margin-top: 16px;
+      padding: 12px;
+      background: var(--card-bg);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 13px;
+      transition: all 0.2s;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    button#openHome:hover {
+      border-color: var(--text-secondary);
+      background: var(--hover-bg);
+    }
+    
+    #saveStatus {
+      margin-top: 8px;
+      font-size: 12px;
+      text-align: center;
+      opacity: 0;
+      color: var(--text-secondary);
+    }
+    
+    .info ul {
+      margin: 0;
+      padding-left: 20px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 4px;">
+      <img src="../../../icons/icon48.png" alt="Logo" width="32" height="32">
+      <h1 style="margin: 0;">Reddit Reader</h1>
+    </div>
+    <p>Enhanced Reddit Experience</p>
+  </div>
+  
+  <div class="info">
+    <div class="info-header">
+      <h3>Settings</h3>
+      <span class="help-tooltip" id="helpTooltip" tabindex="0" role="button" aria-label="How to use">
+        ?
+        <div class="tooltip-content" id="helpTooltipContent" role="tooltip"></div>
+      </span>
+    </div>
+    <template id="tooltipTemplateApiKey">
+      <h4>How to Use:</h4>
+      <ul>
+        <li>Select your preferred AI service provider</li>
+        <li>Configure your API key above</li>
+        <li>Look for the floating button on Reddit pages</li>
+        <li>Click the button to open the side panel</li>
+        <li>Use the "Analyze" button to get insights</li>
+      </ul>
+    </template>
+    <template id="tooltipTemplateBackend">
+      <h4>How to Use (Backend Proxy):</h4>
+      <ul>
+        <li>Select Backend Proxy mode</li>
+        <li>Click Login to sign in on the backend website</li>
+        <li>Return to Reddit and open the side panel</li>
+        <li>Click Analyze to get results from the backend</li>
+        <li>You can switch back to API Key mode anytime</li>
+      </ul>
+    </template>
+    <div class="settings-row">
+      <label>Mode:</label>
+      <div class="mode-group" role="radiogroup" aria-label="Mode">
+        <label class="mode-option">
+          <input type="radio" name="mode" id="modeApiKey" value="apiKey" checked>
+          <span>API Key (Direct)</span>
+        </label>
+        <label class="mode-option">
+          <input type="radio" name="mode" id="modeBackend" value="backend">
+          <span>Backend Proxy</span>
+        </label>
+      </div>
+      <div id="backendSection" style="display: none;">
+        <div class="settings-note">No API key needed. The extension uses your backend session.</div>
+        <div class="backend-row">
+          <div class="backend-url" id="backendBaseUrl" title=""></div>
+          <div class="backend-actions">
+            <button id="backendLogin" class="backend-login-btn" type="button">Login</button>
+            <div id="backendLoginStatus" class="backend-login-status">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="settings-row" id="providerRow">
+      <label for="aiProvider">AI Service Provider:</label>
+      <select id="aiProvider" class="settings-select">
+        <option value="dashscope">Alibaba Cloud (DashScope)</option>
+        <option value="glm">Zhipu AI (GLM)</option>
+        <option value="openai">OpenAI</option>
+        <option value="deepseek">DeepSeek</option>
+      </select>
+    </div>
+    <div class="settings-row">
+      <label for="targetLanguage">Target Language:</label>
+      <select id="targetLanguage" class="settings-select">
+        <option value="zh">Chinese (中文)</option>
+        <option value="en">English</option>
+        <option value="es">Spanish (Español)</option>
+        <option value="hi">Hindi (हिन्दी)</option>
+        <option value="ar">Arabic (العربية)</option>
+        <option value="pt">Portuguese (Português)</option>
+        <option value="bn">Bengali (বাংলা)</option>
+        <option value="ru">Russian (Русский)</option>
+        <option value="ja">Japanese (日本語)</option>
+        <option value="fr">French (Français)</option>
+      </select>
+    </div>
+    <div class="settings-row" id="apiKeyRow">
+      <label for="apiKey" id="apiKeyLabel">API Key:</label>
+      <input type="password" id="apiKey" placeholder="Enter your API key">
+    </div>
+    <button id="saveSettings">
+      Save Settings
+    </button>
+    <div id="saveStatus"></div>
+  </div>
+  
+  <div class="status active" id="status">
+    ✅ Extension Active
+  </div>
+
+  <button id="openHome">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+      <polyline points="9 22 9 12 15 12 15 22"></polyline>
+    </svg>
+    Home
+  </button>
+
+  <script src="popup.js"></script>
+</body>
+</html>
