@@ -19,18 +19,75 @@ class RedditReader2 {
     if (this.isInitialized) return;
     
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => this.createUI());
+      document.addEventListener('DOMContentLoaded', () => {
+        this.createUI();
+        this.recordHistory();
+      });
     } else {
       this.createUI();
+      this.recordHistory();
     }
     
     this.isInitialized = true;
+  }
+
+  async recordHistory() {
+    // Basic URL check first
+    if (!window.location.href.includes('/comments/')) return;
+    
+    // Allow some time for dynamic content to populate
+    setTimeout(async () => {
+      try {
+        // Double check it's a post page and content is loaded
+        if (!RedditScraper.isRedditPost()) {
+          console.log('Reddit Reader: Not a valid post page for history');
+          return;
+        }
+
+        const content = RedditScraper.extractRedditContent();
+        
+        // Ensure we at least have a title to save
+        if (!content.title) {
+           console.log('Reddit Reader: No title found, skipping history');
+           return;
+        }
+
+        const historyItem = {
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+          url: window.location.href,
+          title: content.title,
+          subreddit: content.subreddit,
+          visitTime: new Date().toISOString(),
+          postTime: content.postTime || new Date().toISOString()
+        };
+
+        const result = await chrome.storage.local.get(['redditHistory']);
+        const history = result.redditHistory || [];
+        
+        history.unshift(historyItem);
+        
+        await chrome.storage.local.set({ redditHistory: history });
+        console.log('Reddit Reader: History saved', historyItem.title);
+      } catch (e) {
+        console.error('Reddit Reader: Failed to record history', e);
+      }
+    }, 3000); // Increased delay to 3s to ensure Reddit SPA loads
   }
 
   createUI() {
     this.createFloatingButton();
     this.createFloatingPanel();
     this.setupEventListeners();
+    this.setupMessageListener();
+  }
+
+  setupMessageListener() {
+    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+      if (request.action === 'routeChanged') {
+        console.log('Reddit Reader: Route changed detected, recording history...');
+        this.recordHistory();
+      }
+    });
   }
 
   createFloatingButton() {

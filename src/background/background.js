@@ -1,6 +1,22 @@
 // Background Service Worker for Reddit Reader
 // Handles API requests to avoid CORS issues
 
+// Listen for URL changes (SPA navigation)
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.url) {
+    // Check if it's a Reddit thread
+    if (changeInfo.url.includes('/comments/')) {
+      chrome.tabs.sendMessage(tabId, {
+        action: 'routeChanged',
+        url: changeInfo.url
+      }).catch(() => {
+        // Content script might not be ready or injected yet, which is fine
+        // because on initial load DOMContentLoaded will handle it
+      });
+    }
+  }
+});
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'aiStreamRequest') {
     handleAIStreamRequest(request, sender.tab.id)
