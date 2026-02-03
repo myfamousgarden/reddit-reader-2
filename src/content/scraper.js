@@ -129,8 +129,26 @@ class RedditScraper {
       galleryImages: galleryImages,
       videoUrl: videoUrl,
       videoPoster: videoPoster,
-      subreddit: this.extractSubreddit()
+      subreddit: this.extractSubreddit(),
+      postTime: this.extractPostTime()
     };
+  }
+
+  static extractPostTime() {
+    try {
+      const shredditPost = document.querySelector('shreddit-post');
+      if (shredditPost && shredditPost.hasAttribute('created-timestamp')) {
+        return shredditPost.getAttribute('created-timestamp');
+      }
+      
+      const timeElement = document.querySelector('time');
+      if (timeElement && timeElement.hasAttribute('datetime')) {
+        return timeElement.getAttribute('datetime');
+      }
+    } catch (e) {
+      console.error("Error extracting post time:", e);
+    }
+    return new Date().toISOString();
   }
 
   static extractSubreddit() {

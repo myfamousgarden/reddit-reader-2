@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Reddit Reader",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "AI-powered Reddit enhancement: translate threads, summarize comments, save threads, and export to CSV.",
   "backendBaseUrl": "https://reddit-reader.com",
   "permissions": [
