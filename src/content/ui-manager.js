@@ -98,14 +98,9 @@ class RedditReader2 {
     this.floatingButton = document.createElement('div');
     this.floatingButton.id = 'reddit-reader-2-button';
     this.floatingButton.className = 'reddit-reader-2-floating-button';
+    const iconUrl = chrome.runtime.getURL('icons/icon48.png');
     this.floatingButton.innerHTML = `
-      <svg width="32" height="32" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M64 28C44.1 28 28 41.4 28 58C28 69 36.3 78.6 48.8 83.8L44.5 96L58.5 87.5C60.3 87.8 62.1 88 64 88C83.9 88 100 74.6 100 58C100 41.4 83.9 28 64 28Z" fill="white"/>
-        <rect x="44" y="50" width="40" height="6" rx="3" fill="#667eea"/>
-        <rect x="44" y="64" width="28" height="6" rx="3" fill="#667eea"/>
-        <path d="M100 20L103 32L115 35L103 38L100 50L97 38L85 35L97 32L100 20Z" fill="#FFD700" stroke="white" stroke-width="4"/>
-        <path d="M30 30L32 24L34 30L40 32L34 34L32 40L30 34L24 32L30 30Z" fill="white"/>
-      </svg>
+      <img src="${iconUrl}" style="width: 28px; height: 28px; pointer-events: none; display: block; margin: 0; padding: 0; border: none;">
     `;
     
     this.floatingButton.style.position = 'fixed';
